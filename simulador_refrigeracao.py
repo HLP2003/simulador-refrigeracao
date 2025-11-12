@@ -148,4 +148,146 @@ def compute_effective_capacity(cooler_nominal, cpu_tdp):
     Retorna a capacidade efetiva do cooler aplicando:
      - redução base (BASE_SAFETY_PCT)
      - redução dinâmica adicional proporcional ao quão perto o CPU está do nominal.
-       dinâmica = min(0
+       dinâmica = min(0.20, 0.15 * (cpu_tdp / cooler_nominal))
+    """
+    if cooler_nominal <= 0:
+        return 0.0, 0.0, 0.0
+    dynamic_pct = min(0.20, 0.15 * (cpu_tdp / cooler_nominal))
+    effective = cooler_nominal * (1.0 - BASE_SAFETY_PCT) * (1.0 - dynamic_pct)
+    return effective, round(BASE_SAFETY_PCT*100,1), round(dynamic_pct*100,1)
+
+def estimate_temperature(cpu_tdp, capacity_effective, ambient_c=25.0, workload=1.0):
+    power = cpu_tdp * workload
+    if capacity_effective <= 0:
+        return 120.0  # fallback
+    ratio = power / capacity_effective  # >1 means over-capacity
+    K = 55.0
+    if ratio <= 1.0:
+        delta = ratio * (K * 0.9)
+    else:
+        delta = (1.0 * (K * 0.9)) + ((ratio - 1.0) * (K * 2.0))
+    return round(ambient_c + delta, 1)
+
+def estimate_noise(cooler, utilization_pct):
+    base = cooler.get("ruido_db", 30)
+    scale = sqrt(min(1.0, utilization_pct/100.0))
+    return round(base * (0.6 + 0.4*scale), 1)
+
+def estimate_durability(cooler, utilization_pct):
+    base_years = cooler.get("durabilidade_anos", 5)
+    if utilization_pct <= 80:
+        return base_years
+    else:
+        excess = (utilization_pct - 80) / 20.0
+        return max(1, int(base_years * (1.0 - 0.5*excess)))
+
+# --------------------------
+# Interface Streamlit (ajustada: sem busca livre — apenas seletores)
+# --------------------------
+st.title("Simulador de Refrigeração de CPU (2010–2025)")
+st.markdown("Simulação comparativa com fator de segurança dinâmico. Selecione CPU e cooler e clique em 'Simular'.")
+
+with st.expander("Instruções rápidas (clique para abrir)"):
+    st.write("""
+    - Selecione o processador e o cooler nos menus.
+    - Os valores de TDP dos coolers foram ajustados para refletir eficiência prática (85% do declarado).
+    - O gráfico mostra Temperatura × Carga; painel lateral apresenta métricas detalhadas.
+    """)
+
+col_left, col_right = st.columns((2,1))
+
+with col_left:
+    st.subheader("Seleção")
+    # lista completa nos selects (removida a busca por texto)
+    cpu_choice = st.selectbox("Selecione o processador para simular", [c["modelo"] for c in CPUS])
+    cooler_choice = st.selectbox("Selecione o cooler", [c["modelo"] for c in COOLERS])
+
+    ambient = st.number_input("Temperatura ambiente (°C)", min_value=10.0, max_value=40.0, value=25.0, step=1.0)
+    workload_slider = st.slider("Carga (percentual do TDP)", 10, 150, 100)  # 10% .. 150%
+    show_detailed = st.checkbox("Mostrar gráfico detalhado (Temperatura vs carga)", value=True)
+
+    if st.button("Simular"):
+        cpu = next((c for c in CPUS if c["modelo"] == cpu_choice), None)
+        cooler = next((c for c in COOLERS if c["modelo"] == cooler_choice), None)
+
+        if cpu is None or cooler is None:
+            st.error("Selecionar CPU e cooler válidos.")
+        else:
+            cpu_tdp = cpu["tdp"]
+            nominal = cooler.get("tdp_nominal", 0)
+            capacity_eff, base_pct, dynamic_pct = compute_effective_capacity(nominal, cpu_tdp)
+
+            utilization_pct = round((cpu_tdp * (workload_slider/100.0)) / capacity_eff * 100.0, 1) if capacity_eff>0 else 999.9
+
+            temp_est = estimate_temperature(cpu_tdp, capacity_eff, ambient_c=ambient, workload=workload_slider/100.0)
+            noise_est = estimate_noise(cooler, utilization_pct)
+            dur_est = estimate_durability(cooler, utilization_pct)
+
+            st.markdown("### Resultado")
+            st.write(f"*CPU:* {cpu['modelo']} — TDP: {cpu_tdp} W")
+            st.write(f"*Cooler:* {cooler['modelo']} ({cooler['tipo']}) — Nominal (ajustado): {nominal} W")
+            if "tdp_manufacturer" in cooler:
+                st.write(f"*Especificação fabricante:* {cooler['tdp_manufacturer']} W (ajustado → {nominal} W)")
+            st.write(f"*Capacidade efetiva aplicada:* {capacity_eff:.1f} W (redução base {base_pct}% + dinâmica {dynamic_pct}%)")
+            st.write(f"*Carga aplicada:* {workload_slider}% → potência gerada: {cpu_tdp * workload_slider/100.0:.1f} W")
+            st.write(f"*Utilização da capacidade efetiva:* {utilization_pct}%")
+            st.write(f"*Temperatura estimada (IHS) em carga:* {temp_est} °C (ambiente {ambient} °C)")
+            st.write(f"*Ruído estimado:* {noise_est} dB")
+            st.write(f"*Durabilidade estimada:* ~{dur_est} anos")
+
+            if utilization_pct <= 70:
+                st.success("Sistema seguro: cooler com folga adequada.")
+            elif utilization_pct <= 90:
+                st.info("Sistema adequado: operação dentro dos limites, mas próxima do limite em cargas elevadas.")
+            else:
+                st.error("Risco: capacidade efetiva do cooler pode ser insuficiente. Considere um modelo mais potente ou ajuste de perfil de uso.")
+
+            # Gráficos
+            if show_detailed:
+                st.markdown("### Gráfico: Temperatura vs Carga")
+                loads = np.linspace(10, 150, 30)
+                temps = [estimate_temperature(cpu_tdp, capacity_eff, ambient_c=ambient, workload=l/100.0) for l in loads]
+
+                fig, ax = plt.subplots(figsize=(8,4))
+                ax.plot(loads, temps, linewidth=2)
+                ax.scatter([workload_slider], [temp_est], color="red", zorder=5)
+                ax.set_xlabel("Carga do processador (% do TDP)")
+                ax.set_ylabel("Temperatura estimada (°C)")
+                ax.set_title(f"Temperatura estimada — {cpu['modelo']} + {cooler['modelo']}")
+                ax.grid(True, linestyle='--', alpha=0.6)
+                ax.axvline(workload_slider, color='gray', linestyle=':', linewidth=1)
+                st.pyplot(fig)
+
+            st.markdown("### Comparativo: TDP vs Capacidade efetiva")
+            fig2, ax2 = plt.subplots(figsize=(6,3))
+            ax2.bar(["TDP (W)","Capacidade Efetiva (W)"], [cpu_tdp * (workload_slider/100.0), capacity_eff], color=["#2f72b7","#7f8fa6"])
+            ax2.set_ylabel("Potência (W)")
+            ax2.set_ylim(0, max(capacity_eff, cpu_tdp*1.6)+20)
+            for i,(val,lab) in enumerate(zip([cpu_tdp*(workload_slider/100.0),capacity_eff], ["TDP","Capacidade"])):
+                ax2.text(i, val + max(1,0.02*val), f"{val:.1f}", ha='center', fontsize=10)
+            st.pyplot(fig2)
+
+with col_right:
+    st.subheader("Detalhes rápidos")
+    st.write("Use este painel para comparar rapidamente as métricas do cooler.")
+    selected_cooler = st.selectbox("Visualizar dados do cooler", [c["modelo"] for c in COOLERS])
+    cinfo = next((c for c in COOLERS if c["modelo"]==selected_cooler), None)
+    if cinfo:
+        st.write(f"Modelo: {cinfo['modelo']}")
+        st.write(f"Tipo: {cinfo['tipo']}")
+        st.write(f"Nominal (ajustado): {cinfo['tdp_nominal']} W")
+        if "tdp_manufacturer" in cinfo:
+            st.write(f"Especificação do fabricante: {cinfo['tdp_manufacturer']} W (aplicado → {cinfo['tdp_nominal']} W)")
+        st.write(f"Ruído (médio): {cinfo['ruido_db']} dB")
+        st.write(f"Durabilidade (estimada): {cinfo['durabilidade_anos']} anos")
+    st.markdown("---")
+    st.subheader("Observações sobre o modelo")
+    st.write("""
+    - Este simulador usa modelos heurísticos para comparações e estimativas.  
+    - tdp_manufacturer é um valor declarado pelo fabricante; tdp_nominal aplica 85% do valor declarado para refletir eficiência prática.  
+    - Para medições precisas de temperatura utilize sensores reais (HWMonitor, HWiNFO) e testes práticos.  
+    - Valores de ruído e durabilidade são estimativas médias baseadas em reviews e especificações.
+    """)
+
+st.markdown("---")
+st.caption("Versão modificada — fator de segurança 10% e tdp_nominal = 85% do declarado; novos CPUs e coolers adicionados conforme solicitado.")
