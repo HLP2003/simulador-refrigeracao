@@ -21,9 +21,9 @@ st.set_page_config(page_title="Simulador de Refrigeração - 2010–2025", layou
 CPUS = [
     {"modelo": "AMD Ryzen 5 5600", "tdp": 65, "ano": 2021, "socket": "AM4"},
     {"modelo": "AMD Ryzen 5 5600X", "tdp": 65, "ano": 2020, "socket": "AM4"},
-    {"modelo": "AMD Ryzen 5 5600X3D", "tdp": 65, "ano": 2023, "socket": "AM4"},
+    {"modelo": "AMD Ryzen 5 5600X3D", "tdp": 105, "ano": 2023, "socket": "AM4"},
     {"modelo": "AMD Ryzen 5 5700X", "tdp": 65, "ano": 2022, "socket": "AM4"},
-    {"modelo": "AMD Ryzen 5 5500X3D", "tdp": 65, "ano": 2024, "socket": "AM4"},
+    {"modelo": "AMD Ryzen 5 5500X3D", "tdp": 105, "ano": 2024, "socket": "AM4"},
     {"modelo": "AMD Ryzen 7 5800X", "tdp": 105, "ano": 2020, "socket": "AM4"},
     {"modelo": "AMD Ryzen 7 5700X", "tdp": 65, "ano": 2022, "socket": "AM4"},
     {"modelo": "AMD Ryzen 7 5800X3D", "tdp": 105, "ano": 2022, "socket": "AM4"},
@@ -285,3 +285,4 @@ with col_right:
 
 st.markdown("---")
 st.caption("Versão unificada — banco interno 2010–2025. Ajuste o banco de dados no código caso queira incluir mais modelos.")
+
