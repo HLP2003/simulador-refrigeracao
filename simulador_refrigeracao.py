@@ -26,9 +26,8 @@ CPUS = [
     # (mantive os originais, verifiquei alguns TDPs; adicionei novas linhas)
     {"modelo": "AMD Ryzen 5 5600", "tdp": 65, "ano": 2021, "socket": "AM4"},
     {"modelo": "AMD Ryzen 5 5600X", "tdp": 65, "ano": 2020, "socket": "AM4"},
-    {"modelo": "AMD Ryzen 5 5600X3D", "tdp": 65, "ano": 2023, "socket": "AM4"},
-    {"modelo": "AMD Ryzen 5 5700X", "tdp": 65, "ano": 2022, "socket": "AM4"},
-    {"modelo": "AMD Ryzen 5 5500X3D", "tdp": 65, "ano": 2024, "socket": "AM4"},
+    {"modelo": "AMD Ryzen 5 5600X3D", "tdp": 105, "ano": 2023, "socket": "AM4"},
+    {"modelo": "AMD Ryzen 5 5500X3D", "tdp": 105, "ano": 2024, "socket": "AM4"},
     {"modelo": "AMD Ryzen 7 5800X", "tdp": 105, "ano": 2020, "socket": "AM4"},
     {"modelo": "AMD Ryzen 7 5700X", "tdp": 65, "ano": 2022, "socket": "AM4"},
     {"modelo": "AMD Ryzen 7 5800X3D", "tdp": 105, "ano": 2022, "socket": "AM4"},
@@ -47,20 +46,20 @@ CPUS = [
     {"modelo": "Intel Core i3-8100", "tdp": 65, "ano": 2017, "socket": "LGA1151"},  # 8ª gen (adicional)
     {"modelo": "Intel Core i5-10400F", "tdp": 65, "ano": 2020, "socket": "LGA1200"},
     {"modelo": "Intel Core i5-10600K", "tdp": 125, "ano": 2020, "socket": "LGA1200"},
-    {"modelo": "Intel Core i5-12400F", "tdp": 65, "ano": 2022, "socket": "LGA1700"},
-    {"modelo": "Intel Core i5-13400F", "tdp": 65, "ano": 2023, "socket": "LGA1700"},
+    {"modelo": "Intel Core i5-12400F", "tdp": 120, "ano": 2022, "socket": "LGA1700"},
+    {"modelo": "Intel Core i5-13400F", "tdp": 150, "ano": 2023, "socket": "LGA1700"},
     {"modelo": "Intel Core i7-920", "tdp": 130, "ano": 2008, "socket": "LGA1366"},  # 1ª era Core i7 (represent.)
     {"modelo": "Intel Core i7-7700K", "tdp": 91, "ano": 2017, "socket": "LGA1151"},
     {"modelo": "Intel Core i7-11700K", "tdp": 125, "ano": 2021, "socket": "LGA1200"},
-    {"modelo": "Intel Core i7-12700K", "tdp": 125, "ano": 2022, "socket": "LGA1700"},
-    {"modelo": "Intel Core i7-13700K", "tdp": 125, "ano": 2023, "socket": "LGA1700"},
+    {"modelo": "Intel Core i7-12700K", "tdp": 190, "ano": 2022, "socket": "LGA1700"},
+    {"modelo": "Intel Core i7-13700K", "tdp": 250, "ano": 2023, "socket": "LGA1700"},
 
     {"modelo": "Intel Core i9-10900K", "tdp": 125, "ano": 2020, "socket": "LGA1200"},
     {"modelo": "Intel Core i9-11900K", "tdp": 125, "ano": 2021, "socket": "LGA1200"},
-    {"modelo": "Intel Core i9-12900K", "tdp": 125, "ano": 2022, "socket": "LGA1700"},
-    {"modelo": "Intel Core i9-13900K", "tdp": 125, "ano": 2023, "socket": "LGA1700"},
-
-    # mais antigos / misc
+    {"modelo": "Intel Core i9-12900K", "tdp": 240, "ano": 2022, "socket": "LGA1700"},
+    {"modelo": "Intel Core i9-13900K", "tdp": 250, "ano": 2023, "socket": "LGA1700"},
+    {"modelo": "Intel Core i9-14900K", "tdp": 250, "ano": 2023, "socket": "LGA1700"},
+    
     {"modelo": "Intel Core 2 Duo E8400", "tdp": 65, "ano": 2008, "socket": "LGA775"},
     {"modelo": "AMD FX-8350", "tdp": 125, "ano": 2012, "socket": "AM3+"},
 
@@ -279,6 +278,7 @@ with col_right:
 
 st.markdown("---")
 st.caption("Versão modificada — busca removida e banco estendido (Xeon E5 v3/v4, mais coolers). Ajuste os dados no código conforme necessário.")
+
 
 
 
