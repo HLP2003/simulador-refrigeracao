@@ -1,5 +1,5 @@
 # simulador_refrigeracao_unico.py
-# Versão final integrada: CPUS originais + cálculo térmico aprimorado (+fator de TDP configurado)
+# Versão final integrada: CPUS originais + cálculo térmico aprimorado (fatores de TDP ajustados)
 # Requisitos: streamlit, matplotlib, pandas, numpy
 #
 # Uso:
@@ -310,7 +310,7 @@ with st.expander("Instruções rápidas (clique para abrir)"):
     - Selecione o processador e o cooler nos menus.
     - O simulador ajusta o TDP do CPU pela frequência média (fator agressivo) e pela arquitetura (ano).
     - Agora aplicamos um fator de escala no TDP ajustado para cálculo:
-      **22% (x1.22)** para CPUs com TDP < 170 W e **12% (x1.12)** para CPUs com TDP ≥ 170 W.
+      **20% (x1.20)** para CPUs com TDP < 170 W e **10% (x1.10)** para CPUs com TDP ≥ 170 W.
     - Os valores de TDP dos coolers foram ajustados para refletir eficiência prática (95%).
     - Adicione a condição do gabinete (ventilação) para estimar melhor o airflow.
     - O gráfico mostra Temperatura × Carga; painel lateral apresenta métricas detalhadas.
@@ -330,6 +330,8 @@ with col_left:
 
     ambient = st.number_input("Temperatura ambiente (°C)", min_value=10.0, max_value=40.0, value=25.0, step=1.0)
     workload_slider = st.slider("Carga (percentual do TDP)", 10, 150, 100)
+    # Dica colocada imediatamente após o slider conforme solicitado
+    st.caption("⚙️ Dica: uma carga em torno de 80% representa aproximadamente o TDP nominal do processador.")
     show_detailed = st.checkbox("Mostrar gráfico detalhado (Temperatura vs carga)", value=True)
 
     if st.button("Simular"):
@@ -339,16 +341,17 @@ with col_left:
         if cpu is None or cooler is None:
             st.error("Selecionar CPU e cooler válidos.")
         else:
+            # --- TDP ajustado por freq/arquitetura (SEM o fator extra) ---
             cpu_tdp_adj_no_extra, freq_pct, arch_factor = compute_adjusted_tdp_for_frequency(cpu)
             f_avg_cpu = avg_frequency(cpu)
 
             # aplicar novo fator de TDP:
             if cpu.get("tdp", 0) >= 170:
-                cpu_tdp_adj = cpu_tdp_adj_no_extra * 1.12  # 12% para CPUs >=170W
-                applied_tdp_scale_pct = 12
+                cpu_tdp_adj = cpu_tdp_adj_no_extra * 1.10  # 10% para CPUs >=170W
+                applied_tdp_scale_pct = 10
             else:
-                cpu_tdp_adj = cpu_tdp_adj_no_extra * 1.22  # 22% para CPUs <170W
-                applied_tdp_scale_pct = 22
+                cpu_tdp_adj = cpu_tdp_adj_no_extra * 1.20  # 20% para CPUs <170W
+                applied_tdp_scale_pct = 20
 
             if ventilacao == "Bem ventilado 🟢":
                 vent_factor = 1.0
@@ -439,7 +442,7 @@ with col_right:
     - Este simulador usa modelos heurísticos para comparações e estimativas.  
     - `tdp` do processador NÃO foi alterado; aplicamos um ajuste dinâmico baseado em frequência média e arquitetura para estimar comportamento térmico.  
     - Para aproximar consumo real em boost, aplicamos um fator de escala ao TDP ajustado:
-      **22% (x1.22)** para CPUs com TDP < 170 W e **12% (x1.12)** para CPUs com TDP ≥ 170 W.  
+      **20% (x1.20)** para CPUs com TDP < 170 W e **10% (x1.10)** para CPUs com TDP ≥ 170 W.  
     - `tdp_manufacturer` (quando presente) foi ajustado para `tdp_nominal = 95%` como margem prática.  
     - A ventilação do gabinete reduz a capacidade efetiva do cooler (Bem ventilado 100%, Moderado 90%, Pouco 80%).  
     - Para medições precisas de temperatura utilize sensores reais (HWMonitor, HWiNFO) e testes práticos.
