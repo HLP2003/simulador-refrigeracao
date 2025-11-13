@@ -1,5 +1,5 @@
 # simulador_refrigeracao_unico.py
-# Versão final integrada: CPUS originais + cálculo térmico aprimorado (+30% TDP, ventilação)
+# Versão final integrada: CPUS originais + cálculo térmico aprimorado (+fator TDP configurado)
 # Requisitos: streamlit, matplotlib, pandas, numpy
 #
 # Uso:
@@ -201,10 +201,10 @@ COOLERS = [
     {"modelo": "Cooler Master Hyper 212 (Air) - DUP (entry)", "tipo": "Air", "tdp_manufacturer": 150, "ruido_db": 35, "durabilidade_anos": 5},
 ]
 
-# calcular tdp_nominal ajustado = 0.90 * tdp_manufacturer
+# calcular tdp_nominal ajustado = 0.95 * tdp_manufacturer  <-- alterado para 95% de eficiência prática
 for c in COOLERS:
     if "tdp_manufacturer" in c and c["tdp_manufacturer"] is not None:
-        c["tdp_nominal"] = round(0.90 * c["tdp_manufacturer"], 1)
+        c["tdp_nominal"] = round(0.95 * c["tdp_manufacturer"], 1)
     else:
         c["tdp_nominal"] = c.get("tdp_nominal", 0.0)
 
@@ -241,7 +241,7 @@ def architecture_factor(cpu):
 def compute_adjusted_tdp_for_frequency(cpu):
     """
     Retorna: adjusted_tdp_no_extra, freq_pct, arch_factor
-    - adjusted_tdp_no_extra: TDP ajustado por frequência e arquitetura (sem o +30% extra).
+    - adjusted_tdp_no_extra: TDP ajustado por frequência e arquitetura (sem o fator de escala aplicado depois).
     """
     base_tdp = cpu["tdp"]
     f_avg = avg_frequency(cpu)
@@ -262,7 +262,7 @@ def compute_adjusted_tdp_for_frequency(cpu):
 
 def compute_effective_capacity(cooler_nominal, cpu_adjusted_tdp, vent_factor=1.0):
     """
-    cooler_nominal: tdp_nominal (já aplicado o 90% do fabricante)
+    cooler_nominal: tdp_nominal (já aplicado o 95% do fabricante)
     vent_factor: 1.0 (bem ventilado), 0.9 (moderado), 0.8 (pouco ventilado)
     """
     if cooler_nominal <= 0:
@@ -313,8 +313,9 @@ with st.expander("Instruções rápidas (clique para abrir)"):
     st.write("""
     - Selecione o processador e o cooler nos menus.
     - O simulador ajusta o TDP do CPU pela frequência média (fator agressivo) e pela arquitetura (ano).
-    - Agora aplicamos +30% no TDP ajustado para aproximar consumo real de boost (aplicado apenas nos cálculos).
-    - Os valores de TDP dos coolers foram ajustados para refletir eficiência prática (-10% nominal).
+    - Agora aplicamos um fator de escala no TDP ajustado para aproximar consumo real de boost:
+      **25% (x1.25)** por padrão, ou **18% (x1.18)** para CPUs com TDP >= 170 W.
+    - Os valores de TDP dos coolers foram ajustados para refletir eficiência prática (95%).
     - Adicione a condição do gabinete (ventilação) para estimar melhor o airflow.
     - O gráfico mostra Temperatura × Carga; painel lateral apresenta métricas detalhadas.
     """)
@@ -342,12 +343,19 @@ with col_left:
         if cpu is None or cooler is None:
             st.error("Selecionar CPU e cooler válidos.")
         else:
-            # --- TDP ajustado por freq/arquitetura (SEM o +30%) ---
+            # --- TDP ajustado por freq/arquitetura (SEM o fator de escala extra) ---
             cpu_tdp_adj_no_extra, freq_pct, arch_factor = compute_adjusted_tdp_for_frequency(cpu)
             f_avg_cpu = avg_frequency(cpu)
 
-            # aplicando +30% ao TDP ajustado apenas para o cálculo realista (mantemos os dados originais)
-            cpu_tdp_adj = cpu_tdp_adj_no_extra * 1.30  # <-- AQUI aplicamos o +30%
+            # aplicar fator de TDP requisitado:
+            # - CPUs com TDP >= 170W -> 18% (x1.18)
+            # - caso contrário -> 25% (x1.25)
+            if cpu.get("tdp", 0) >= 170:
+                cpu_tdp_adj = cpu_tdp_adj_no_extra * 1.18  # CPUs de alta potência usam 18%
+                applied_tdp_scale_pct = 18
+            else:
+                cpu_tdp_adj = cpu_tdp_adj_no_extra * 1.25  # padrão 25%
+                applied_tdp_scale_pct = 25
 
             # determinar fator de ventilação numérico
             if ventilacao == "Bem ventilado 🟢":
@@ -371,9 +379,10 @@ with col_left:
             st.write(f"*CPU:* {cpu['modelo']} — TDP nominal: {cpu['tdp']} W")
             st.write(f"*Frequência média (base/turbo):* {f_avg_cpu:.2f} GHz (ajuste freq: {freq_pct}%)")
             st.write(f"*Arquitetura / fator aplicado:* {cpu.get('arquitetura','-')} → fator {arch_factor}")
-            st.write(f"*TDP ajustado (freq + arquitetura) (sem +30%):* {cpu_tdp_adj_no_extra:.1f} W")
-            st.write(f"*TDP usado no cálculo (aplicando +30%):* {cpu_tdp_adj:.1f} W")
-            st.write(f"*Cooler:* {cooler['modelo']} ({cooler['tipo']}) — Nominal ajustado (90%): {nominal} W")
+            st.write(f"*TDP ajustado (freq + arquitetura) (sem escala extra):* {cpu_tdp_adj_no_extra:.1f} W")
+            st.write(f"*Fator de escala aplicado ao TDP para cálculo:* {applied_tdp_scale_pct}%")
+            st.write(f"*TDP usado no cálculo (aplicando fator):* {cpu_tdp_adj:.1f} W")
+            st.write(f"*Cooler:* {cooler['modelo']} ({cooler['tipo']}) — Nominal ajustado (95%): {nominal} W")
             if "tdp_manufacturer" in cooler:
                 st.write(f"*Especificação fabricante:* {cooler['tdp_manufacturer']} W (aplicado → {nominal} W)")
             st.write(f"*Condição do gabinete:* {ventilacao} (fator aplicado: {vent_factor})")
@@ -437,11 +446,11 @@ with col_right:
     st.write("""
     - Este simulador usa modelos heurísticos para comparações e estimativas.  
     - `tdp` do processador NÃO foi alterado; aplicamos um ajuste dinâmico baseado em frequência média e arquitetura para estimar comportamento térmico.  
-    - Para aproximar consumo real em boost, aplicamos +30% ao TDP ajustado (aplicado somente nos cálculos).  
-    - `tdp_manufacturer` (quando presente) foi ajustado para `tdp_nominal = 90%` como margem prática.  
+    - Para aproximar consumo real em boost, aplicamos um fator de escala ao TDP ajustado: **25% (x1.25)** por padrão, **18% (x1.18)** para CPUs com TDP >= 170 W.  
+    - `tdp_manufacturer` (quando presente) foi ajustado para `tdp_nominal = 95%` como margem prática.  
     - A ventilação do gabinete reduz a capacidade efetiva do cooler (Bem ventilado 100%, Moderado 90%, Pouco 80%).  
     - Para medições precisas de temperatura utilize sensores reais (HWMonitor, HWiNFO) e testes práticos.
     """)
 
 st.markdown("---")
-st.caption("Versão final — CPUS originais preservadas; cálculo dinâmico (+30% TDP, ventilação, frequência ↔ temperatura) integrado.")
+st.caption("Versão final — CPUS originais preservadas; cálculo dinâmico (fatores de TDP ajustados, eficiência dos coolers 95%, ventilação, frequência ↔ temperatura) integrado.")
