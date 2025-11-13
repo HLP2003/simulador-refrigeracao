@@ -309,8 +309,8 @@ with st.expander("Instruções rápidas (clique para abrir)"):
     st.write("""
     - Selecione o processador e o cooler nos menus.
     - O simulador ajusta o TDP do CPU pela frequência média (fator agressivo) e pela arquitetura (ano).
-    - Agora aplicamos um fator de escala no TDP ajustado para cálculo:
-      **20% (x1.20)** para CPUs com TDP < 170 W e **10% (x1.10)** para CPUs com TDP ≥ 170 W.
+    - Aplicamos um fator de escala no TDP ajustado para cálculo:
+      **+22% (x1.22)** para CPUs com TDP < 170 W e **+10% (x1.10)** para CPUs com TDP ≥ 170 W.
     - Os valores de TDP dos coolers foram ajustados para refletir eficiência prática (95%).
     - Adicione a condição do gabinete (ventilação) para estimar melhor o airflow.
     - O gráfico mostra Temperatura × Carga; painel lateral apresenta métricas detalhadas.
@@ -347,11 +347,11 @@ with col_left:
 
             # aplicar novo fator de TDP:
             if cpu.get("tdp", 0) >= 170:
-                cpu_tdp_adj = cpu_tdp_adj_no_extra * 1.10  # 10% para CPUs >=170W
+                cpu_tdp_adj = cpu_tdp_adj_no_extra * 1.10  # +10% para CPUs >=170W
                 applied_tdp_scale_pct = 10
             else:
-                cpu_tdp_adj = cpu_tdp_adj_no_extra * 1.20  # 20% para CPUs <170W
-                applied_tdp_scale_pct = 20
+                cpu_tdp_adj = cpu_tdp_adj_no_extra * 1.22  # +22% para CPUs <170W
+                applied_tdp_scale_pct = 22
 
             if ventilacao == "Bem ventilado 🟢":
                 vent_factor = 1.0
@@ -375,7 +375,7 @@ with col_left:
             st.write(f"*Frequência média (base/turbo):* {f_avg_cpu:.2f} GHz (ajuste freq: {freq_pct}%)")
             st.write(f"*Arquitetura / fator aplicado:* {cpu.get('arquitetura','-')} → fator {arch_factor}")
             st.write(f"*TDP ajustado (freq + arquitetura) (sem escala extra):* {cpu_tdp_adj_no_extra:.1f} W")
-            st.write(f"*Fator de escala aplicado ao TDP para cálculo:* {applied_tdp_scale_pct}%")
+            st.write(f"*Fator de escala aplicado ao TDP para cálculo:* +{applied_tdp_scale_pct}%")
             st.write(f"*TDP usado no cálculo (aplicando fator):* {cpu_tdp_adj:.1f} W")
             st.write(f"*Cooler:* {cooler['modelo']} ({cooler['tipo']}) — Nominal ajustado (95%): {nominal} W")
             if "tdp_manufacturer" in cooler:
@@ -396,18 +396,29 @@ with col_left:
                 st.error("Risco: capacidade efetiva do cooler pode ser insuficiente. Considere um modelo mais potente.")
 
             if show_detailed:
-                st.markdown("### Gráfico: Temperatura vs Carga")
-                loads = np.linspace(10, 150, 50)
+                st.markdown("### Gráfico: Temperatura vs Carga (detalhado)")
+                loads = np.linspace(10, 150, 80)
                 temps = [estimate_temperature(cpu_tdp_adj, capacity_eff, ambient_c=ambient, workload=l/100.0, f_avg=f_avg_cpu) for l in loads]
+                tdp_effective = [cpu_tdp_adj * (l/100.0) for l in loads]
 
-                fig, ax = plt.subplots(figsize=(8, 4))
-                ax.plot(loads, temps, linewidth=2)
-                ax.scatter([workload_slider], [temp_est], color="red", zorder=5)
+                fig, ax = plt.subplots(figsize=(10, 5))
+                ax2 = ax.twinx()
+                ax.plot(loads, temps, linewidth=2, label="Temperatura (°C)")
+                ax2.plot(loads, tdp_effective, linewidth=1.5, linestyle='--', label="TDP Efetivo (W)")
+
+                # marcar ponto selecionado
+                ax.scatter([workload_slider], [temp_est], zorder=6)
+                ax.axvline(workload_slider, color='gray', linestyle=':', linewidth=1)
+
                 ax.set_xlabel("Carga do processador (% do TDP)")
                 ax.set_ylabel("Temperatura estimada (°C)")
-                ax.set_title(f"Temperatura estimada — {cpu['modelo']} + {cooler['modelo']}")
+                ax2.set_ylabel("TDP efetivo (W)")
+
                 ax.grid(True, linestyle='--', alpha=0.6)
-                ax.axvline(workload_slider, color='gray', linestyle=':', linewidth=1)
+                lines, labels = ax.get_legend_handles_labels()
+                lines2, labels2 = ax2.get_legend_handles_labels()
+                ax.legend(lines + lines2, labels + labels2, loc='upper left')
+
                 st.pyplot(fig)
 
             st.markdown("### Comparativo: TDP efetivo vs Capacidade efetiva do cooler")
@@ -415,7 +426,7 @@ with col_left:
             ax2.bar(["TDP efetivo (W)", "Capacidade Efetiva (W)"], [power_generated, capacity_eff], color=["#2f72b7", "#7f8fa6"])
             ax2.set_ylabel("Potência (W)")
             ax2.set_ylim(0, max(capacity_eff, power_generated) + 20)
-            for i, (val, lab) in enumerate(zip([power_generated, capacity_eff], ["TDP", "Capacidade"])):
+            for i, val in enumerate([power_generated, capacity_eff]):
                 ax2.text(i, val + max(1, 0.02 * val), f"{val:.1f}", ha='center', fontsize=10)
             st.pyplot(fig2)
 
@@ -440,9 +451,9 @@ with col_right:
     st.subheader("Observações sobre o modelo")
     st.write("""
     - Este simulador usa modelos heurísticos para comparações e estimativas.  
-    - `tdp` do processador NÃO foi alterado; aplicamos um ajuste dinâmico baseado em frequência média e arquitetura para estimar comportamento térmico.  
+    - `tdp` do processador NÃO foi alterado na tabela original; aplicamos um ajuste dinâmico baseado em frequência média e arquitetura para estimar comportamento térmico.  
     - Para aproximar consumo real em boost, aplicamos um fator de escala ao TDP ajustado:
-      **20% (x1.20)** para CPUs com TDP < 170 W e **10% (x1.10)** para CPUs com TDP ≥ 170 W.  
+      **+22% (x1.22)** para CPUs com TDP < 170 W e **+10% (x1.10)** para CPUs com TDP ≥ 170 W.  
     - `tdp_manufacturer` (quando presente) foi ajustado para `tdp_nominal = 95%` como margem prática.  
     - A ventilação do gabinete reduz a capacidade efetiva do cooler (Bem ventilado 100%, Moderado 90%, Pouco 80%).  
     - Para medições precisas de temperatura utilize sensores reais (HWMonitor, HWiNFO) e testes práticos.
