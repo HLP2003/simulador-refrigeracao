@@ -137,34 +137,73 @@ CPUS = [
 ]
 
 # --------------------------
-# COOLERS (mantive como no seu último código; já ordenados por desempenho)
+# COOLERS (ATUALIZADA: adições solicitadas e nomes com indicação Air/Water)
+# Ordem: approximada DO MAIS FRACO para O MAIS FORTE (conforme solicitado).
+# Mantive os campos: modelo (com indicação), tipo ("Air" ou "AIO"/"Water"), tdp_manufacturer (W),
+# ruido_db (dB), durabilidade_anos (anos).
 # --------------------------
 
 COOLERS = [
-    {"modelo": "DeepCool Castle 360EX", "tipo": "AIO", "tdp_manufacturer": 350, "ruido_db": 31, "durabilidade_anos": 7},
-    {"modelo": "Corsair H150i (AIO 360)", "tipo": "AIO", "tdp_manufacturer": 350, "ruido_db": 30, "durabilidade_anos": 7},
-    {"modelo": "NZXT Kraken X63 (AIO 280)", "tipo": "AIO", "tdp_manufacturer": 350, "ruido_db": 29, "durabilidade_anos": 7},
-    {"modelo": "DeepCool LS720 (AIO 360)", "tipo": "AIO", "tdp_manufacturer": 350, "ruido_db": 30, "durabilidade_anos": 7},
-    {"modelo": "Arctic Liquid Freezer II 240", "tipo": "AIO", "tdp_manufacturer": 320, "ruido_db": 27, "durabilidade_anos": 7},
-    {"modelo": "Corsair H100i (AIO 240)", "tipo": "AIO", "tdp_manufacturer": 300, "ruido_db": 28, "durabilidade_anos": 6},
-    {"modelo": "Rise Mode Sentinel 240 (AIO)", "tipo": "AIO", "tdp_manufacturer": 300, "ruido_db": 32, "durabilidade_anos": 6},
-    {"modelo": "TGT Storm 240 (AIO)", "tipo": "AIO", "tdp_manufacturer": 280, "ruido_db": 33, "durabilidade_anos": 5},
-    {"modelo": "Pichau AIO 240", "tipo": "AIO", "tdp_manufacturer": 270, "ruido_db": 34, "durabilidade_anos": 5},
-    {"modelo": "Husky Hunter 240 (AIO)", "tipo": "AIO", "tdp_manufacturer": 260, "ruido_db": 33, "durabilidade_anos": 5},
-    {"modelo": "Rise Mode Gamer Black 240 (AIO)", "tipo": "AIO", "tdp_manufacturer": 220, "ruido_db": 28, "durabilidade_anos": 6},
-    {"modelo": "Noctua NH-D15", "tipo": "Air", "tdp_manufacturer": 250, "ruido_db": 24, "durabilidade_anos": 8},
-    {"modelo": "DeepCool AK620", "tipo": "Air", "tdp_manufacturer": 260, "ruido_db": 28, "durabilidade_anos": 6},
-    {"modelo": "Be Quiet! Dark Rock Pro 4", "tipo": "Air", "tdp_manufacturer": 250, "ruido_db": 24, "durabilidade_anos": 7},
-    {"modelo": "Thermalright Phantom Spirit 120", "tipo": "Air", "tdp_manufacturer": 234, "ruido_db": 26, "durabilidade_anos": 6},
-    {"modelo": "Arctic Freezer 34", "tipo": "Air", "tdp_manufacturer": 180, "ruido_db": 28, "durabilidade_anos": 5},
-    {"modelo": "Thermalright TRUE Spirit 140", "tipo": "Air", "tdp_manufacturer": 200, "ruido_db": 28, "durabilidade_anos": 6},
-    {"modelo": "Cooler Master Hyper 212", "tipo": "Air", "tdp_manufacturer": 150, "ruido_db": 35, "durabilidade_anos": 5},
-    {"modelo": "Rise Mode Ventus (Air)", "tipo": "Air", "tdp_manufacturer": 150, "ruido_db": 36, "durabilidade_anos": 4},
-    {"modelo": "Redragon TYR", "tipo": "Air", "tdp_manufacturer": 130, "ruido_db": 22, "durabilidade_anos": 4},
-    {"modelo": "DeepCool Gammaxx 400", "tipo": "Air", "tdp_manufacturer": 120, "ruido_db": 38, "durabilidade_anos": 4},
+    # Fracos / entrada
+    {"modelo": "SuperFrame SuperFlow 450 (Air)", "tipo": "Air", "tdp_manufacturer": 95, "ruido_db": 25, "durabilidade_anos": 4},
+    {"modelo": "Gamdias Boreas E1-410 (Air)", "tipo": "Air", "tdp_manufacturer": 95, "ruido_db": 28, "durabilidade_anos": 4},
     {"modelo": "TGT Glacier 120 (Air)", "tipo": "Air", "tdp_manufacturer": 100, "ruido_db": 36, "durabilidade_anos": 3},
-    {"modelo": "Gamdias Boreas E1-410", "tipo": "Air", "tdp_manufacturer": 95, "ruido_db": 28, "durabilidade_anos": 4},
-    {"modelo": "SuperFrame SuperFlow 450", "tipo": "Air", "tdp_manufacturer": 95, "ruido_db": 25, "durabilidade_anos": 4},
+    {"modelo": "DeepCool Gammaxx 400 (Air)", "tipo": "Air", "tdp_manufacturer": 120, "ruido_db": 38, "durabilidade_anos": 4},
+    {"modelo": "Redragon TYR (Air)", "tipo": "Air", "tdp_manufacturer": 130, "ruido_db": 22, "durabilidade_anos": 4},
+
+    # Médio-baixa
+    {"modelo": "Cooler Master Hyper 212 (Air)", "tipo": "Air", "tdp_manufacturer": 150, "ruido_db": 35, "durabilidade_anos": 5},
+    {"modelo": "DeepCool AK500S (Air)", "tipo": "Air", "tdp_manufacturer": 150, "ruido_db": 28, "durabilidade_anos": 6},  # fonte: DeepCool / revendas
+    {"modelo": "Thermalright TRUE Spirit 140 (Air)", "tipo": "Air", "tdp_manufacturer": 200, "ruido_db": 28, "durabilidade_anos": 6},
+
+    # Médio
+    {"modelo": "Arctic Freezer 34 (Air)", "tipo": "Air", "tdp_manufacturer": 180, "ruido_db": 28, "durabilidade_anos": 5},
+    {"modelo": "DeepCool AK400 (Air)", "tipo": "Air", "tdp_manufacturer": 220, "ruido_db": 29, "durabilidade_anos": 6},  # fonte: DeepCool (até ~220W)
+    {"modelo": "DeepCool Gammaxx AG400 (Air)", "tipo": "Air", "tdp_manufacturer": 220, "ruido_db": 28, "durabilidade_anos": 4},  # revendas BR
+    {"modelo": "GameMax Sigma 520 (Air)", "tipo": "Air", "tdp_manufacturer": 220, "ruido_db": 30, "durabilidade_anos": 5},  # GameMax specs (~220W)
+    {"modelo": "Rise Mode Storm 8 (Air)", "tipo": "Air", "tdp_manufacturer": 280, "ruido_db": 30, "durabilidade_anos": 5},  # Rise Mode (TDP anunciado 280W)
+
+    # Alto desempenho air
+    {"modelo": "Be Quiet! Dark Rock Pro 4 (Air)", "tipo": "Air", "tdp_manufacturer": 250, "ruido_db": 24, "durabilidade_anos": 7},
+    {"modelo": "Noctua NH-D15 (Air)", "tipo": "Air", "tdp_manufacturer": 250, "ruido_db": 24, "durabilidade_anos": 8},
+    {"modelo": "DeepCool AK620 (Air)", "tipo": "Air", "tdp_manufacturer": 260, "ruido_db": 28, "durabilidade_anos": 6},
+
+    # AIO / Water coolers (entrada → médio)
+    {"modelo": "Rise Mode Black 240 (Water)", "tipo": "Water", "tdp_manufacturer": 250, "ruido_db": 30, "durabilidade_anos": 5},  # loja RiseMode / Kabum
+    {"modelo": "GameMax IceBurg 240 (Water)", "tipo": "Water", "tdp_manufacturer": 245, "ruido_db": 31, "durabilidade_anos": 6},  # GameMax spec (~245W)
+    {"modelo": "Corsair H100i (AIO 240) (Water)", "tipo": "Water", "tdp_manufacturer": 300, "ruido_db": 28, "durabilidade_anos": 6},
+    {"modelo": "Arctic Liquid Freezer II 240 (Water)", "tipo": "Water", "tdp_manufacturer": 320, "ruido_db": 27, "durabilidade_anos": 7},
+
+    # AIO / Water coolers (alto)
+    {"modelo": "TGT Storm 240 (Water)", "tipo": "Water", "tdp_manufacturer": 280, "ruido_db": 33, "durabilidade_anos": 5},
+    {"modelo": "DeepCool LS720 (AIO 360) (Water)", "tipo": "Water", "tdp_manufacturer": 300, "ruido_db": 32, "durabilidade_anos": 7},  # DeepCool LS720 spec (~300W)
+    {"modelo": "Corsair H150i (AIO 360) (Water)", "tipo": "Water", "tdp_manufacturer": 350, "ruido_db": 30, "durabilidade_anos": 7},
+    {"modelo": "NZXT Kraken X63 (AIO 280) (Water)", "tipo": "Water", "tdp_manufacturer": 350, "ruido_db": 29, "durabilidade_anos": 7},
+    {"modelo": "DeepCool Castle 360EX (AIO 360) (Water)", "tipo": "Water", "tdp_manufacturer": 350, "ruido_db": 31, "durabilidade_anos": 7},
+
+    # Extras / compatibilidade e modelos de referência (manter compatibilidade com lista antiga)
+    {"modelo": "Rise Mode Gamer Black 240 (AIO) (Water)", "tipo": "Water", "tdp_manufacturer": 220, "ruido_db": 28, "durabilidade_anos": 6},
+    {"modelo": "Pichau AIO 240 (Water)", "tipo": "Water", "tdp_manufacturer": 270, "ruido_db": 34, "durabilidade_anos": 5},
+    {"modelo": "Husky Hunter 240 (AIO) (Water)", "tipo": "Water", "tdp_manufacturer": 260, "ruido_db": 33, "durabilidade_anos": 5},
+    {"modelo": "Rise Mode Sentinel 240 (AIO) (Water)", "tipo": "Water", "tdp_manufacturer": 300, "ruido_db": 32, "durabilidade_anos": 6},
+
+    # Mantidos (como no seu código original, em ordem de referência)
+    {"modelo": "Rise Mode Ventus (Air)", "tipo": "Air", "tdp_manufacturer": 150, "ruido_db": 36, "durabilidade_anos": 4},
+    {"modelo": "Redragon TYR (Air)", "tipo": "Air", "tdp_manufacturer": 130, "ruido_db": 22, "durabilidade_anos": 4},
+    {"modelo": "DeepCool AK620 (Air)", "tipo": "Air", "tdp_manufacturer": 260, "ruido_db": 28, "durabilidade_anos": 6},
+    {"modelo": "DeepCool Castle 360EX (AIO 360) (Water)", "tipo": "Water", "tdp_manufacturer": 350, "ruido_db": 31, "durabilidade_anos": 7},
+    {"modelo": "Corsair H150i (AIO 360) (Water)", "tipo": "Water", "tdp_manufacturer": 350, "ruido_db": 30, "durabilidade_anos": 7},
+    {"modelo": "NZXT Kraken X63 (AIO 280) (Water)", "tipo": "Water", "tdp_manufacturer": 350, "ruido_db": 29, "durabilidade_anos": 7},
+    {"modelo": "DeepCool LS720 (AIO 360) (Water)", "tipo": "Water", "tdp_manufacturer": 300, "ruido_db": 32, "durabilidade_anos": 7},
+    {"modelo": "Arctic Liquid Freezer II 240 (Water)", "tipo": "Water", "tdp_manufacturer": 320, "ruido_db": 27, "durabilidade_anos": 7},
+    {"modelo": "Corsair H100i (AIO 240) (Water)", "tipo": "Water", "tdp_manufacturer": 300, "ruido_db": 28, "durabilidade_anos": 6},
+    {"modelo": "TGT Storm 240 (Water)", "tipo": "Water", "tdp_manufacturer": 280, "ruido_db": 33, "durabilidade_anos": 5},
+    {"modelo": "Pichau AIO 240 (Water)", "tipo": "Water", "tdp_manufacturer": 270, "ruido_db": 34, "durabilidade_anos": 5},
+    {"modelo": "Rise Mode Gamer Black 240 (AIO) (Water)", "tipo": "Water", "tdp_manufacturer": 220, "ruido_db": 28, "durabilidade_anos": 6},
+    {"modelo": "Husky Hunter 240 (AIO) (Water)", "tipo": "Water", "tdp_manufacturer": 260, "ruido_db": 33, "durabilidade_anos": 5},
+    {"modelo": "Rise Mode Sentinel 240 (AIO) (Water)", "tipo": "Water", "tdp_manufacturer": 300, "ruido_db": 32, "durabilidade_anos": 6},
+    {"modelo": "Rise Mode Storm 8 (Air) - DUP (entry)", "tipo": "Air", "tdp_manufacturer": 280, "ruido_db": 30, "durabilidade_anos": 5},
+    {"modelo": "Cooler Master Hyper 212 (Air) - DUP (entry)", "tipo": "Air", "tdp_manufacturer": 150, "ruido_db": 35, "durabilidade_anos": 5},
 ]
 
 # calcular tdp_nominal ajustado = 0.85 * tdp_manufacturer
@@ -365,4 +404,4 @@ with col_right:
     """)
 
 st.markdown("---")
-st.caption("Versão atualizada — CPUS revisadas com dados AMD/Intel oficiais; coolers ordenados por desempenho.")
+st.caption("Versão atualizada — CPUS revisadas com dados AMD/Intel oficiais; coolers atualizados com adições (AK400, AK500S, AG400, Rise Mode Storm 8, GameMax Sigma/Iceburg etc.).")
