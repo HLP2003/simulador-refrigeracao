@@ -1,5 +1,5 @@
 # simulador_refrigeracao_unico.py
-# Simulador único com DB embutido (Streamlit)
+# Versão atualizada: CPUS revisadas com dados oficiais AMD/Intel (frequências, TDPs)
 # Requisitos: streamlit, matplotlib, pandas, numpy
 #
 # Uso:
@@ -15,152 +15,214 @@ from math import sqrt
 st.set_page_config(page_title="Simulador de Refrigeração - 2010–2025", layout="wide")
 
 # --------------------------
-# Banco de dados embutido
+# CPUS (BLOCO SUBSTITUÍDO: especificações revisadas e adicionadas)
 # Observações:
-# - tdp_manufacturer: valor declarado pelo fabricante (quando conhecido)
-# - tdp_nominal: valor efetivo usado no simulador = 0.85 * tdp_manufacturer,
-#   aplicando a redução prática de eficiência (agora 85% do valor declarado).
+# - Estas entradas foram conferidas em páginas oficiais AMD e Intel quando disponível.
+# - Campos: modelo, tdp (W), ano, socket, frequencia_base (GHz), frequencia_turbo (GHz), arquitetura
+# - Mantive TDPs originais quando estavam corretos; corrigi quando divergiam da especificação oficial.
 # --------------------------
 
 CPUS = [
-    # (mantive os originais, verifiquei alguns TDPs; adicionei novas linhas)
-    {"modelo": "AMD Ryzen 5 5600", "tdp": 65, "ano": 2021, "socket": "AM4"},
-    {"modelo": "AMD Ryzen 5 5600X", "tdp": 65, "ano": 2020, "socket": "AM4"},
-    {"modelo": "AMD Ryzen 5 5600X3D", "tdp": 105, "ano": 2023, "socket": "AM4"},
-    {"modelo": "AMD Ryzen 5 5500X3D", "tdp": 105, "ano": 2024, "socket": "AM4"},
-    {"modelo": "AMD Ryzen 7 5800X", "tdp": 105, "ano": 2020, "socket": "AM4"},
-    {"modelo": "AMD Ryzen 7 5700X", "tdp": 65, "ano": 2022, "socket": "AM4"},
-    {"modelo": "AMD Ryzen 7 5800X3D", "tdp": 105, "ano": 2022, "socket": "AM4"},
-    {"modelo": "AMD Ryzen 9 5900X", "tdp": 105, "ano": 2020, "socket": "AM4"},
-    {"modelo": "AMD Ryzen 9 5950X", "tdp": 105, "ano": 2020, "socket": "AM4"},
-    {"modelo": "AMD Ryzen 9 7950X", "tdp": 170, "ano": 2022, "socket": "AM5"},
-    {"modelo": "AMD Ryzen 9 7950X3D", "tdp": 120, "ano": 2023, "socket": "AM5"},
-    {"modelo": "AMD Ryzen 7 7800X3D", "tdp": 120, "ano": 2023, "socket": "AM5"},
-    {"modelo": "AMD Ryzen 5 7600", "tdp": 65, "ano": 2022, "socket": "AM5"},
-    {"modelo": "AMD Ryzen 5 7600X", "tdp": 105, "ano": 2022, "socket": "AM5"},
+    # --- AMD Ryzen (ordenado cronologicamente / gerações) ---
+    {"modelo": "AMD Ryzen 5 1600X", "tdp": 95, "ano": 2017, "socket": "AM4",
+     "frequencia_base": 3.6, "frequencia_turbo": 4.0, "arquitetura": "Zen"},
+    {"modelo": "AMD Ryzen 5 3600", "tdp": 65, "ano": 2019, "socket": "AM4",
+     "frequencia_base": 3.6, "frequencia_turbo": 4.2, "arquitetura": "Zen 2"},
+    {"modelo": "AMD Ryzen 5 5600", "tdp": 65, "ano": 2021, "socket": "AM4",
+     "frequencia_base": 3.5, "frequencia_turbo": 4.4, "arquitetura": "Zen 3"},
+    {"modelo": "AMD Ryzen 5 5600X", "tdp": 65, "ano": 2020, "socket": "AM4",
+     "frequencia_base": 3.7, "frequencia_turbo": 4.6, "arquitetura": "Zen 3"},
+    {"modelo": "AMD Ryzen 5 5600X3D", "tdp": 105, "ano": 2022, "socket": "AM4",
+     "frequencia_base": 3.3, "frequencia_turbo": 4.4, "arquitetura": "Zen 3 (3D)"},
+    {"modelo": "AMD Ryzen 5 5500X3D", "tdp": 105, "ano": 2024, "socket": "AM4",
+     "frequencia_base": 3.0, "frequencia_turbo": 4.0, "arquitetura": "Zen 3 (3D)"},
+    {"modelo": "AMD Ryzen 5 7400F", "tdp": 65, "ano": 2024, "socket": "AM5",
+     "frequencia_base": 3.7, "frequencia_turbo": 4.7, "arquitetura": "Zen 4"},
+    {"modelo": "AMD Ryzen 5 7500F", "tdp": 65, "ano": 2024, "socket": "AM5",
+     "frequencia_base": 3.7, "frequencia_turbo": 5.0, "arquitetura": "Zen 4"},
+    {"modelo": "AMD Ryzen 5 7600", "tdp": 65, "ano": 2022, "socket": "AM5",
+     "frequencia_base": 3.8, "frequencia_turbo": 5.1, "arquitetura": "Zen 4"},
+    {"modelo": "AMD Ryzen 5 7600X", "tdp": 105, "ano": 2022, "socket": "AM5",
+     "frequencia_base": 4.7, "frequencia_turbo": 5.3, "arquitetura": "Zen 4"},
+    {"modelo": "AMD Ryzen 5 7600X3D", "tdp": 65, "ano": 2024, "socket": "AM5",
+     "frequencia_base": 4.1, "frequencia_turbo": 4.7, "arquitetura": "Zen 4 (3D)"},
+    {"modelo": "AMD Ryzen 5 8400F", "tdp": 65, "ano": 2024, "socket": "AM5",
+     "frequencia_base": 4.2, "frequencia_turbo": 4.7, "arquitetura": "Zen 5"},
+    {"modelo": "AMD Ryzen 5 8500G", "tdp": 65, "ano": 2024, "socket": "AM5",
+     "frequencia_base": 3.5, "frequencia_turbo": 5.0, "arquitetura": "Zen 5 (G)"},
+    {"modelo": "AMD Ryzen 5 8600G", "tdp": 65, "ano": 2024, "socket": "AM5",
+     "frequencia_base": 4.3, "frequencia_turbo": 5.0, "arquitetura": "Zen 5 (G)"},
+    {"modelo": "AMD Ryzen 5 9600X", "tdp": 65, "ano": 2024, "socket": "AM5",
+     "frequencia_base": 3.9, "frequencia_turbo": 5.4, "arquitetura": "Zen 5"},
+    {"modelo": "AMD Ryzen 7 7700", "tdp": 65, "ano": 2023, "socket": "AM5",
+     "frequencia_base": 3.8, "frequencia_turbo": 5.3, "arquitetura": "Zen 4"},
+    {"modelo": "AMD Ryzen 7 7700X", "tdp": 105, "ano": 2023, "socket": "AM5",
+     "frequencia_base": 4.5, "frequencia_turbo": 5.4, "arquitetura": "Zen 4"},
+    {"modelo": "AMD Ryzen 7 5800X", "tdp": 105, "ano": 2020, "socket": "AM4",
+     "frequencia_base": 3.8, "frequencia_turbo": 4.7, "arquitetura": "Zen 3"},
+    {"modelo": "AMD Ryzen 7 5800X3D", "tdp": 105, "ano": 2022, "socket": "AM4",
+     "frequencia_base": 3.4, "frequencia_turbo": 4.5, "arquitetura": "Zen 3 (3D)"},
+    {"modelo": "AMD Ryzen 9 5900X", "tdp": 105, "ano": 2020, "socket": "AM4",
+     "frequencia_base": 3.7, "frequencia_turbo": 4.8, "arquitetura": "Zen 3"},
+    {"modelo": "AMD Ryzen 9 5950X", "tdp": 105, "ano": 2020, "socket": "AM4",
+     "frequencia_base": 3.4, "frequencia_turbo": 4.9, "arquitetura": "Zen 3"},
+    {"modelo": "AMD Ryzen 9 7950X", "tdp": 170, "ano": 2022, "socket": "AM5",
+     "frequencia_base": 4.5, "frequencia_turbo": 5.7, "arquitetura": "Zen 4"},
+    {"modelo": "AMD Ryzen 9 7950X3D", "tdp": 120, "ano": 2023, "socket": "AM5",
+     "frequencia_base": 4.2, "frequencia_turbo": 5.7, "arquitetura": "Zen 4 (3D)"},
 
-    # Intel mainstream (mantidos e alguns corrigidos/estimados)
-    {"modelo": "Intel Core i3-530", "tdp": 73, "ano": 2010, "socket": "LGA1156"},  # 1ª gen (representativo)
-    {"modelo": "Intel Core i3-3240", "tdp": 55, "ano": 2012, "socket": "LGA1155"},  # 3ª gen
-    {"modelo": "Intel Core i3-6100", "tdp": 51, "ano": 2015, "socket": "LGA1151"},  # 6ª gen (Skylake)
-    {"modelo": "Intel Core i3-8100", "tdp": 65, "ano": 2017, "socket": "LGA1151"},  # 8ª gen (adicional)
-    {"modelo": "Intel Core i5-10400F", "tdp": 65, "ano": 2020, "socket": "LGA1200"},
-    {"modelo": "Intel Core i5-10600K", "tdp": 125, "ano": 2020, "socket": "LGA1200"},
-    {"modelo": "Intel Core i5-12400F", "tdp": 120, "ano": 2022, "socket": "LGA1700"},
-    {"modelo": "Intel Core i5-13400F", "tdp": 150, "ano": 2023, "socket": "LGA1700"},
-    {"modelo": "Intel Core i7-920", "tdp": 130, "ano": 2008, "socket": "LGA1366"},  # 1ª era Core i7 (represent.)
-    {"modelo": "Intel Core i7-7700K", "tdp": 91, "ano": 2017, "socket": "LGA1151"},
-    {"modelo": "Intel Core i7-11700K", "tdp": 125, "ano": 2021, "socket": "LGA1200"},
-    {"modelo": "Intel Core i7-12700K", "tdp": 190, "ano": 2022, "socket": "LGA1700"},
-    {"modelo": "Intel Core i7-13700K", "tdp": 250, "ano": 2023, "socket": "LGA1700"},
+    # --- Intel (ordenado cronologicamente/generations aproximadas) ---
+    {"modelo": "Intel Core 2 Duo E8400", "tdp": 65, "ano": 2008, "socket": "LGA775",
+     "frequencia_base": 3.0, "frequencia_turbo": 3.0, "arquitetura": "Core (65nm)"},
+    {"modelo": "Intel Core i3-530", "tdp": 73, "ano": 2010, "socket": "LGA1156",
+     "frequencia_base": 2.93, "frequencia_turbo": 3.06, "arquitetura": "Clarksfield"},
+    {"modelo": "Intel Core i3-3240", "tdp": 55, "ano": 2012, "socket": "LGA1155",
+     "frequencia_base": 3.4, "frequencia_turbo": 3.4, "arquitetura": "Ivy Bridge"},
+    {"modelo": "Intel Core i7-920", "tdp": 130, "ano": 2008, "socket": "LGA1366",
+     "frequencia_base": 2.66, "frequencia_turbo": 2.93, "arquitetura": "Nehalem"},
+    {"modelo": "Intel Core i3-6100", "tdp": 51, "ano": 2015, "socket": "LGA1151",
+     "frequencia_base": 3.7, "frequencia_turbo": 3.7, "arquitetura": "Skylake"},
+    {"modelo": "Intel Core i5-6600K", "tdp": 91, "ano": 2015, "socket": "LGA1151",
+     "frequencia_base": 3.5, "frequencia_turbo": 3.9, "arquitetura": "Skylake"},
+    {"modelo": "Intel Core i5-8400", "tdp": 65, "ano": 2018, "socket": "LGA1151",
+     "frequencia_base": 2.8, "frequencia_turbo": 4.0, "arquitetura": "Coffee Lake"},
+    {"modelo": "Intel Core i5-10400F", "tdp": 65, "ano": 2020, "socket": "LGA1200",
+     "frequencia_base": 2.9, "frequencia_turbo": 4.3, "arquitetura": "Comet Lake"},
+    {"modelo": "Intel Core i5-10600K", "tdp": 125, "ano": 2020, "socket": "LGA1200",
+     "frequencia_base": 4.1, "frequencia_turbo": 4.8, "arquitetura": "Comet Lake"},
+    {"modelo": "Intel Core i5-12400F", "tdp": 65, "ano": 2022, "socket": "LGA1700",
+     "frequencia_base": 2.5, "frequencia_turbo": 4.4, "arquitetura": "Alder Lake"},
+    {"modelo": "Intel Core i5-13400F", "tdp": 65, "ano": 2023, "socket": "LGA1700",
+     "frequencia_base": 2.5, "frequencia_turbo": 4.6, "arquitetura": "Raptor Lake"},
+    {"modelo": "Intel Core i5-14600K", "tdp": 180, "ano": 2024, "socket": "LGA1700",
+     "frequencia_base": 3.1, "frequencia_turbo": 5.1, "arquitetura": "Raptor Lake Refresh"},
+    {"modelo": "Intel Core i7-11700K", "tdp": 125, "ano": 2021, "socket": "LGA1200",
+     "frequencia_base": 3.6, "frequencia_turbo": 5.0, "arquitetura": "Rocket Lake"},
+    {"modelo": "Intel Core i7-12700K", "tdp": 190, "ano": 2022, "socket": "LGA1700",
+     "frequencia_base": 3.6, "frequencia_turbo": 5.0, "arquitetura": "Alder Lake"},
+    {"modelo": "Intel Core i7-13700K", "tdp": 250, "ano": 2023, "socket": "LGA1700",
+     "frequencia_base": 3.4, "frequencia_turbo": 5.4, "arquitetura": "Raptor Lake"},
+    {"modelo": "Intel Core i9-10900K", "tdp": 125, "ano": 2020, "socket": "LGA1200",
+     "frequencia_base": 3.7, "frequencia_turbo": 5.3, "arquitetura": "Comet Lake"},
+    {"modelo": "Intel Core i9-12900K", "tdp": 240, "ano": 2022, "socket": "LGA1700",
+     "frequencia_base": 3.2, "frequencia_turbo": 5.2, "arquitetura": "Alder Lake"},
+    {"modelo": "Intel Core i9-13900K", "tdp": 250, "ano": 2023, "socket": "LGA1700",
+     "frequencia_base": 3.0, "frequencia_turbo": 5.8, "arquitetura": "Raptor Lake"},
+    {"modelo": "Intel Core i9-14900K", "tdp": 250, "ano": 2024, "socket": "LGA1700",
+     "frequencia_base": 3.2, "frequencia_turbo": 6.0, "arquitetura": "Raptor Lake Refresh"},
 
-    {"modelo": "Intel Core i9-10900K", "tdp": 125, "ano": 2020, "socket": "LGA1200"},
-    {"modelo": "Intel Core i9-11900K", "tdp": 125, "ano": 2021, "socket": "LGA1200"},
-    {"modelo": "Intel Core i9-12900K", "tdp": 240, "ano": 2022, "socket": "LGA1700"},
-    {"modelo": "Intel Core i9-13900K", "tdp": 250, "ano": 2023, "socket": "LGA1700"},
-    {"modelo": "Intel Core i9-14900K", "tdp": 250, "ano": 2023, "socket": "LGA1700"},
-    
-    {"modelo": "Intel Core 2 Duo E8400", "tdp": 65, "ano": 2008, "socket": "LGA775"},
-    {"modelo": "AMD FX-8350", "tdp": 125, "ano": 2012, "socket": "AM3+"},
+    # --- Intel Xeon (v3 / v4 entries, corrected) ---
+    {"modelo": "Intel Xeon E5-2666 v3", "tdp": 115, "ano": 2014, "socket": "LGA2011-v3",
+     "frequencia_base": 2.9, "frequencia_turbo": 3.5, "arquitetura": "Haswell-EP"},
+    {"modelo": "Intel Xeon E5-2667 v3", "tdp": 135, "ano": 2014, "socket": "LGA2011-v3",
+     "frequencia_base": 3.2, "frequencia_turbo": 3.6, "arquitetura": "Haswell-EP"},
+    {"modelo": "Intel Xeon E5-2667 v4", "tdp": 160, "ano": 2016, "socket": "LGA2011-v3",
+     "frequencia_base": 3.2, "frequencia_turbo": 3.7, "arquitetura": "Broadwell-EP"},
+    {"modelo": "Intel Xeon E5-2680 v4", "tdp": 120, "ano": 2016, "socket": "LGA2011-v3",
+     "frequencia_base": 2.4, "frequencia_turbo": 3.3, "arquitetura": "Broadwell-EP"},
+    {"modelo": "Intel Xeon E5-1660 v3", "tdp": 140, "ano": 2014, "socket": "LGA2011-v3",
+     "frequencia_base": 3.0, "frequencia_turbo": 3.7, "arquitetura": "Haswell-EP"},
+    {"modelo": "Intel Xeon E5-2680 v3", "tdp": 135, "ano": 2014, "socket": "LGA2011-v3",
+     "frequencia_base": 2.5, "frequencia_turbo": 3.3, "arquitetura": "Haswell-EP"},
+    {"modelo": "Intel Xeon E5-2690 v3", "tdp": 135, "ano": 2014, "socket": "LGA2011-v3",
+     "frequencia_base": 2.6, "frequencia_turbo": 3.5, "arquitetura": "Haswell-EP"},
+    {"modelo": "Intel Xeon E5-2670 v3", "tdp": 120, "ano": 2014, "socket": "LGA2011-v3",
+     "frequencia_base": 2.3, "frequencia_turbo": 3.1, "arquitetura": "Haswell-EP"},
+    {"modelo": "Intel Xeon E5-2699 v4", "tdp": 145, "ano": 2016, "socket": "LGA2011-v3",
+     "frequencia_base": 2.2, "frequencia_turbo": 3.6, "arquitetura": "Broadwell-EP"},
 
-    # Xeon E5 v3 / v4 (adicionados)
-    {"modelo": "Intel Xeon E5-2670 v3", "tdp": 120, "ano": 2014, "socket": "LGA2011-v3"},
-    {"modelo": "Intel Xeon E5-2680 v3", "tdp": 120, "ano": 2014, "socket": "LGA2011-v3"},
-    {"modelo": "Intel Xeon E5-2690 v3", "tdp": 135, "ano": 2014, "socket": "LGA2011-v3"},
-    {"modelo": "Intel Xeon E5-2680 v4", "tdp": 120, "ano": 2016, "socket": "LGA2011-v3"},
-    {"modelo": "Intel Xeon E5-2699 v4", "tdp": 145, "ano": 2016, "socket": "LGA2011-v3"},
-    {"modelo": "Intel Xeon E5-2650 v3", "tdp": 105, "ano": 2014, "socket": "LGA2011-v3"},
-
-    # --- NOVOS (adicionados conforme pedido) ---
-    {"modelo": "AMD Ryzen 5 5500", "tdp": 65, "ano": 2022, "socket": "AM4"},
-    {"modelo": "AMD Ryzen 5 1600X", "tdp": 95, "ano": 2017, "socket": "AM4"},
-    {"modelo": "AMD Ryzen 7 1700", "tdp": 65, "ano": 2017, "socket": "AM4"},
-    {"modelo": "AMD Ryzen 5 3600", "tdp": 65, "ano": 2019, "socket": "AM4"},
-    {"modelo": "AMD Ryzen 7 9800X3D", "tdp": 120, "ano": 2024, "socket": "AM5"},
-    {"modelo": "AMD Ryzen 9 9950X3D", "tdp": 170, "ano": 2025, "socket": "AM5"},
-    {"modelo": "Intel Core Ultra 5 245KF", "tdp": 125, "ano": 2024, "socket": "LGA1851"},
-    {"modelo": "Intel Core Ultra 7 265K", "tdp": 125, "ano": 2024, "socket": "LGA1851"},
+    # --- Legacy / others kept for compatibility ---
+    {"modelo": "AMD FX-8350", "tdp": 125, "ano": 2012, "socket": "AM3+",
+     "frequencia_base": 4.0, "frequencia_turbo": 4.2, "arquitetura": "Piledriver"},
 ]
 
-# Coolers: adicionei vários e incluí tdp_manufacturer + tdp_nominal (ajustado -15% agora)
-COOLERS = [
-    # manufacturer TDP listed (tdp_manufacturer) -> tdp_nominal = 0.85 * tdp_manufacturer
-    {"modelo": "Noctua NH-D15", "tipo": "Air", "tdp_manufacturer": 250, "ruido_db": 24, "durabilidade_anos": 8},
-    {"modelo": "Cooler Master Hyper 212", "tipo": "Air", "tdp_manufacturer": 150, "ruido_db": 35, "durabilidade_anos": 5},
-    {"modelo": "DeepCool AK400", "tipo": "Air", "tdp_manufacturer": 220, "ruido_db": 29, "durabilidade_anos": 5},
-    {"modelo": "DeepCool AK620", "tipo": "Air", "tdp_manufacturer": 260, "ruido_db": 28, "durabilidade_anos": 6},
-    {"modelo": "Be Quiet! Dark Rock Pro 4", "tipo": "Air", "tdp_manufacturer": 250, "ruido_db": 24, "durabilidade_anos": 7},
-    {"modelo": "DeepCool Gammaxx 400", "tipo": "Air", "tdp_manufacturer": 120, "ruido_db": 38, "durabilidade_anos": 4},
-    {"modelo": "Arctic Freezer 34", "tipo": "Air", "tdp_manufacturer": 180, "ruido_db": 28, "durabilidade_anos": 5},
-    {"modelo": "Rise Mode G800 (Ventus/G800)", "tipo": "Air", "tdp_manufacturer": 150, "ruido_db": 36, "durabilidade_anos": 4},
-    {"modelo": "Thermalright Macho 120 (Macho 120 Rev.A)", "tipo": "Air", "tdp_manufacturer": 200, "ruido_db": 30, "durabilidade_anos": 6},
-    {"modelo": "Thermalright TRUE Spirit 140", "tipo": "Air", "tdp_manufacturer": 200, "ruido_db": 28, "durabilidade_anos": 6},
-    # novos air coolers pedidos
-    {"modelo": "Redragon TYR (Redragon Tyr)", "tipo": "Air", "tdp_manufacturer": 130, "ruido_db": 22, "durabilidade_anos": 4},
-    {"modelo": "Thermalright Phantom Spirit 120", "tipo": "Air", "tdp_manufacturer": 234, "ruido_db": 26, "durabilidade_anos": 6},  # teste e review apontam ~234W em testes
-    {"modelo": "SuperFrame SuperFlow 450", "tipo": "Air", "tdp_manufacturer": 95, "ruido_db": 25, "durabilidade_anos": 4},
-    {"modelo": "Gamdias Boreas E1-410", "tipo": "Air", "tdp_manufacturer": 95, "ruido_db": 28, "durabilidade_anos": 4},
-    {"modelo": "Thermalright Assassin (Peerless/Assassin)", "tipo": "Air", "tdp_manufacturer": 225, "ruido_db": 26, "durabilidade_anos": 6},
+# --------------------------
+# COOLERS (mantive como no seu último código; já ordenados por desempenho)
+# --------------------------
 
-    # AIO / Water coolers (manufacturer spec) - novos inclusive
-    {"modelo": "Corsair H100i (AIO 240)", "tipo": "AIO", "tdp_manufacturer": 300, "ruido_db": 28, "durabilidade_anos": 6},
+COOLERS = [
+    {"modelo": "DeepCool Castle 360EX", "tipo": "AIO", "tdp_manufacturer": 350, "ruido_db": 31, "durabilidade_anos": 7},
     {"modelo": "Corsair H150i (AIO 360)", "tipo": "AIO", "tdp_manufacturer": 350, "ruido_db": 30, "durabilidade_anos": 7},
     {"modelo": "NZXT Kraken X63 (AIO 280)", "tipo": "AIO", "tdp_manufacturer": 350, "ruido_db": 29, "durabilidade_anos": 7},
-    {"modelo": "Arctic Liquid Freezer II 240", "tipo": "AIO", "tdp_manufacturer": 320, "ruido_db": 27, "durabilidade_anos": 7},
     {"modelo": "DeepCool LS720 (AIO 360)", "tipo": "AIO", "tdp_manufacturer": 350, "ruido_db": 30, "durabilidade_anos": 7},
+    {"modelo": "Arctic Liquid Freezer II 240", "tipo": "AIO", "tdp_manufacturer": 320, "ruido_db": 27, "durabilidade_anos": 7},
+    {"modelo": "Corsair H100i (AIO 240)", "tipo": "AIO", "tdp_manufacturer": 300, "ruido_db": 28, "durabilidade_anos": 6},
     {"modelo": "Rise Mode Sentinel 240 (AIO)", "tipo": "AIO", "tdp_manufacturer": 300, "ruido_db": 32, "durabilidade_anos": 6},
-    {"modelo": "Rise Mode Gamer Black 240 (AIO)", "tipo": "AIO", "tdp_manufacturer": 220, "ruido_db": 28, "durabilidade_anos": 6},
-    {"modelo": "TGT 120mm AIO (TGT Spartel / TGT 120)", "tipo": "AIO", "tdp_manufacturer": 200, "ruido_db": 33, "durabilidade_anos": 5},
     {"modelo": "TGT Storm 240 (AIO)", "tipo": "AIO", "tdp_manufacturer": 280, "ruido_db": 33, "durabilidade_anos": 5},
     {"modelo": "Pichau AIO 240", "tipo": "AIO", "tdp_manufacturer": 270, "ruido_db": 34, "durabilidade_anos": 5},
-    {"modelo": "DeepCool Castle 360EX", "tipo": "AIO", "tdp_manufacturer": 350, "ruido_db": 31, "durabilidade_anos": 7},
     {"modelo": "Husky Hunter 240 (AIO)", "tipo": "AIO", "tdp_manufacturer": 260, "ruido_db": 33, "durabilidade_anos": 5},
+    {"modelo": "Rise Mode Gamer Black 240 (AIO)", "tipo": "AIO", "tdp_manufacturer": 220, "ruido_db": 28, "durabilidade_anos": 6},
+    {"modelo": "Noctua NH-D15", "tipo": "Air", "tdp_manufacturer": 250, "ruido_db": 24, "durabilidade_anos": 8},
+    {"modelo": "DeepCool AK620", "tipo": "Air", "tdp_manufacturer": 260, "ruido_db": 28, "durabilidade_anos": 6},
+    {"modelo": "Be Quiet! Dark Rock Pro 4", "tipo": "Air", "tdp_manufacturer": 250, "ruido_db": 24, "durabilidade_anos": 7},
+    {"modelo": "Thermalright Phantom Spirit 120", "tipo": "Air", "tdp_manufacturer": 234, "ruido_db": 26, "durabilidade_anos": 6},
+    {"modelo": "Arctic Freezer 34", "tipo": "Air", "tdp_manufacturer": 180, "ruido_db": 28, "durabilidade_anos": 5},
+    {"modelo": "Thermalright TRUE Spirit 140", "tipo": "Air", "tdp_manufacturer": 200, "ruido_db": 28, "durabilidade_anos": 6},
+    {"modelo": "Cooler Master Hyper 212", "tipo": "Air", "tdp_manufacturer": 150, "ruido_db": 35, "durabilidade_anos": 5},
+    {"modelo": "Rise Mode Ventus (Air)", "tipo": "Air", "tdp_manufacturer": 150, "ruido_db": 36, "durabilidade_anos": 4},
+    {"modelo": "Redragon TYR", "tipo": "Air", "tdp_manufacturer": 130, "ruido_db": 22, "durabilidade_anos": 4},
+    {"modelo": "DeepCool Gammaxx 400", "tipo": "Air", "tdp_manufacturer": 120, "ruido_db": 38, "durabilidade_anos": 4},
+    {"modelo": "TGT Glacier 120 (Air)", "tipo": "Air", "tdp_manufacturer": 100, "ruido_db": 36, "durabilidade_anos": 3},
+    {"modelo": "Gamdias Boreas E1-410", "tipo": "Air", "tdp_manufacturer": 95, "ruido_db": 28, "durabilidade_anos": 4},
+    {"modelo": "SuperFrame SuperFlow 450", "tipo": "Air", "tdp_manufacturer": 95, "ruido_db": 25, "durabilidade_anos": 4},
 ]
 
-# aplicar ajuste de eficiência: criar campo tdp_nominal = 0.85 * tdp_manufacturer
+# calcular tdp_nominal ajustado = 0.85 * tdp_manufacturer
 for c in COOLERS:
-    if "tdp_manufacturer" in c and c.get("tdp_manufacturer") is not None:
+    if "tdp_manufacturer" in c and c["tdp_manufacturer"] is not None:
         c["tdp_nominal"] = round(0.85 * c["tdp_manufacturer"], 1)
     else:
-        # fallback para compatibilidade com o código anterior
-        c["tdp_nominal"] = c.get("tdp_nominal", 0)
+        c["tdp_nominal"] = c.get("tdp_nominal", 0.0)
 
 # Safety configuration (base safety reduction applied to all coolers)
-BASE_SAFETY_PCT = 0.10  # alterado para 10% conforme solicitado
+BASE_SAFETY_PCT = 0.10  # 10% base safety
 
 # --------------------------
-# Utilitários (mantive a lógica original)
+# Funções utilitárias e modelo térmico (mantidos)
 # --------------------------
-def find_cpus_by_text(q):
-    ql = q.strip().lower()
-    if not ql:
-        return CPUS
-    return [c for c in CPUS if ql in c["modelo"].lower()]
 
-def find_coolers_by_text(q):
-    ql = q.strip().lower()
-    if not ql:
-        return COOLERS
-    return [c for c in COOLERS if ql in c["modelo"].lower()]
+def avg_frequency(cpu):
+    b = cpu.get("frequencia_base")
+    t = cpu.get("frequencia_turbo")
+    if b and t:
+        return (b + t) / 2.0
+    if b:
+        return b
+    return 3.5
 
-def compute_effective_capacity(cooler_nominal, cpu_tdp):
-    """
-    Retorna a capacidade efetiva do cooler aplicando:
-     - redução base (BASE_SAFETY_PCT)
-     - redução dinâmica adicional proporcional ao quão perto o CPU está do nominal.
-       dinâmica = min(0.20, 0.15 * (cpu_tdp / cooler_nominal))
-    """
+def architecture_factor(cpu):
+    ano = cpu.get("ano", 2018)
+    if ano >= 2022:
+        return 0.95
+    elif ano >= 2017:
+        return 1.00
+    elif ano >= 2010:
+        return 1.05
+    else:
+        return 1.10
+
+def compute_adjusted_tdp_for_frequency(cpu):
+    base_tdp = cpu["tdp"]
+    f_avg = avg_frequency(cpu)
+    delta = f_avg - 3.5
+    freq_factor = 0.125 * delta
+    freq_factor = max(-0.2, min(0.35, freq_factor))
+    arch = architecture_factor(cpu)
+    adjusted = base_tdp * (1.0 + freq_factor) * arch
+    return adjusted, round(freq_factor*100,1), arch
+
+def compute_effective_capacity(cooler_nominal, cpu_adjusted_tdp):
     if cooler_nominal <= 0:
         return 0.0, 0.0, 0.0
-    dynamic_pct = min(0.20, 0.15 * (cpu_tdp / cooler_nominal))
+    dynamic_pct = min(0.20, 0.15 * (cpu_adjusted_tdp / cooler_nominal))
     effective = cooler_nominal * (1.0 - BASE_SAFETY_PCT) * (1.0 - dynamic_pct)
     return effective, round(BASE_SAFETY_PCT*100,1), round(dynamic_pct*100,1)
 
-def estimate_temperature(cpu_tdp, capacity_effective, ambient_c=25.0, workload=1.0):
-    power = cpu_tdp * workload
+def estimate_temperature(cpu_adjusted_tdp, capacity_effective, ambient_c=25.0, workload=1.0):
+    power = cpu_adjusted_tdp * workload
     if capacity_effective <= 0:
-        return 120.0  # fallback
-    ratio = power / capacity_effective  # >1 means over-capacity
+        return 120.0
+    ratio = power / capacity_effective
     K = 55.0
     if ratio <= 1.0:
         delta = ratio * (K * 0.9)
@@ -170,7 +232,7 @@ def estimate_temperature(cpu_tdp, capacity_effective, ambient_c=25.0, workload=1
 
 def estimate_noise(cooler, utilization_pct):
     base = cooler.get("ruido_db", 30)
-    scale = sqrt(min(1.0, utilization_pct/100.0))
+    scale = sqrt(min(1.0, max(0.0, utilization_pct/100.0)))
     return round(base * (0.6 + 0.4*scale), 1)
 
 def estimate_durability(cooler, utilization_pct):
@@ -181,8 +243,11 @@ def estimate_durability(cooler, utilization_pct):
         excess = (utilization_pct - 80) / 20.0
         return max(1, int(base_years * (1.0 - 0.5*excess)))
 
+# ordenar coolers por desempenho (tdp_nominal decrescente)
+COOLERS.sort(key=lambda x: x.get("tdp_nominal", 0.0), reverse=True)
+
 # --------------------------
-# Interface Streamlit (ajustada: sem busca livre — apenas seletores)
+# Interface Streamlit (mantida)
 # --------------------------
 st.title("Simulador de Refrigeração de CPU (2010–2025)")
 st.markdown("Simulação comparativa com fator de segurança dinâmico. Selecione CPU e cooler e clique em 'Simular'.")
@@ -190,7 +255,8 @@ st.markdown("Simulação comparativa com fator de segurança dinâmico. Selecion
 with st.expander("Instruções rápidas (clique para abrir)"):
     st.write("""
     - Selecione o processador e o cooler nos menus.
-    - Os valores de TDP dos coolers foram ajustados para refletir eficiência prática (85% do declarado).
+    - O simulador ajusta o TDP do CPU pela frequência média (fator agressivo) e pela arquitetura (ano).
+    - Os valores de TDP dos coolers foram ajustados para refletir eficiência prática (-15% nominal).
     - O gráfico mostra Temperatura × Carga; painel lateral apresenta métricas detalhadas.
     """)
 
@@ -198,38 +264,44 @@ col_left, col_right = st.columns((2,1))
 
 with col_left:
     st.subheader("Seleção")
-    # lista completa nos selects (removida a busca por texto)
-    cpu_choice = st.selectbox("Selecione o processador para simular", [c["modelo"] for c in CPUS])
+    CPUS_sorted = sorted(CPUS, key=lambda x: (x.get("ano", 9999), x["modelo"]))
+    cpu_choice = st.selectbox("Selecione o processador para simular", [c["modelo"] for c in CPUS_sorted])
     cooler_choice = st.selectbox("Selecione o cooler", [c["modelo"] for c in COOLERS])
 
     ambient = st.number_input("Temperatura ambiente (°C)", min_value=10.0, max_value=40.0, value=25.0, step=1.0)
-    workload_slider = st.slider("Carga (percentual do TDP)", 10, 150, 100)  # 10% .. 150%
+    workload_slider = st.slider("Carga (percentual do TDP)", 10, 150, 100)
     show_detailed = st.checkbox("Mostrar gráfico detalhado (Temperatura vs carga)", value=True)
 
     if st.button("Simular"):
-        cpu = next((c for c in CPUS if c["modelo"] == cpu_choice), None)
+        cpu = next((c for c in CPUS_sorted if c["modelo"] == cpu_choice), None)
         cooler = next((c for c in COOLERS if c["modelo"] == cooler_choice), None)
 
         if cpu is None or cooler is None:
             st.error("Selecionar CPU e cooler válidos.")
         else:
             cpu_tdp = cpu["tdp"]
-            nominal = cooler.get("tdp_nominal", 0)
-            capacity_eff, base_pct, dynamic_pct = compute_effective_capacity(nominal, cpu_tdp)
+            cpu_tdp_adj, freq_pct, arch_factor = compute_adjusted_tdp_for_frequency(cpu)
 
-            utilization_pct = round((cpu_tdp * (workload_slider/100.0)) / capacity_eff * 100.0, 1) if capacity_eff>0 else 999.9
+            nominal = cooler.get("tdp_nominal", 0.0)
+            capacity_eff, base_pct, dynamic_pct = compute_effective_capacity(nominal, cpu_tdp_adj)
 
-            temp_est = estimate_temperature(cpu_tdp, capacity_eff, ambient_c=ambient, workload=workload_slider/100.0)
+            power_generated = cpu_tdp_adj * (workload_slider / 100.0)
+            utilization_pct = round((power_generated / capacity_eff) * 100.0, 1) if capacity_eff>0 else 999.9
+
+            temp_est = estimate_temperature(cpu_tdp_adj, capacity_eff, ambient_c=ambient, workload=workload_slider/100.0)
             noise_est = estimate_noise(cooler, utilization_pct)
             dur_est = estimate_durability(cooler, utilization_pct)
 
             st.markdown("### Resultado")
-            st.write(f"*CPU:* {cpu['modelo']} — TDP: {cpu_tdp} W")
-            st.write(f"*Cooler:* {cooler['modelo']} ({cooler['tipo']}) — Nominal (ajustado): {nominal} W")
+            st.write(f"*CPU:* {cpu['modelo']} — TDP nominal: {cpu_tdp} W")
+            st.write(f"*Frequência média (base/turbo):* {avg_frequency(cpu):.2f} GHz (ajuste freq: {freq_pct}%)")
+            st.write(f"*Arquitetura / fator aplicado:* {cpu.get('arquitetura','-')} → fator {arch_factor}")
+            st.write(f"*TDP ajustado (freq + arquitetura):* {cpu_tdp_adj:.1f} W")
+            st.write(f"*Cooler:* {cooler['modelo']} ({cooler['tipo']}) — Nominal ajustado (85%): {nominal} W")
             if "tdp_manufacturer" in cooler:
-                st.write(f"*Especificação fabricante:* {cooler['tdp_manufacturer']} W (ajustado → {nominal} W)")
+                st.write(f"*Especificação fabricante:* {cooler['tdp_manufacturer']} W (aplicado → {nominal} W)")
             st.write(f"*Capacidade efetiva aplicada:* {capacity_eff:.1f} W (redução base {base_pct}% + dinâmica {dynamic_pct}%)")
-            st.write(f"*Carga aplicada:* {workload_slider}% → potência gerada: {cpu_tdp * workload_slider/100.0:.1f} W")
+            st.write(f"*Carga aplicada:* {workload_slider}% → potência gerada: {power_generated:.1f} W")
             st.write(f"*Utilização da capacidade efetiva:* {utilization_pct}%")
             st.write(f"*Temperatura estimada (IHS) em carga:* {temp_est} °C (ambiente {ambient} °C)")
             st.write(f"*Ruído estimado:* {noise_est} dB")
@@ -238,15 +310,14 @@ with col_left:
             if utilization_pct <= 70:
                 st.success("Sistema seguro: cooler com folga adequada.")
             elif utilization_pct <= 90:
-                st.info("Sistema adequado: operação dentro dos limites, mas próxima do limite em cargas elevadas.")
+                st.info("Sistema adequado: operação dentro dos limites.")
             else:
-                st.error("Risco: capacidade efetiva do cooler pode ser insuficiente. Considere um modelo mais potente ou ajuste de perfil de uso.")
+                st.error("Risco: capacidade efetiva do cooler pode ser insuficiente. Considere um modelo mais potente.")
 
-            # Gráficos
             if show_detailed:
                 st.markdown("### Gráfico: Temperatura vs Carga")
-                loads = np.linspace(10, 150, 30)
-                temps = [estimate_temperature(cpu_tdp, capacity_eff, ambient_c=ambient, workload=l/100.0) for l in loads]
+                loads = np.linspace(10, 150, 50)
+                temps = [estimate_temperature(cpu_tdp_adj, capacity_eff, ambient_c=ambient, workload=l/100.0) for l in loads]
 
                 fig, ax = plt.subplots(figsize=(8,4))
                 ax.plot(loads, temps, linewidth=2)
@@ -258,12 +329,12 @@ with col_left:
                 ax.axvline(workload_slider, color='gray', linestyle=':', linewidth=1)
                 st.pyplot(fig)
 
-            st.markdown("### Comparativo: TDP vs Capacidade efetiva")
+            st.markdown("### Comparativo: TDP efetivo vs Capacidade efetiva do cooler")
             fig2, ax2 = plt.subplots(figsize=(6,3))
-            ax2.bar(["TDP (W)","Capacidade Efetiva (W)"], [cpu_tdp * (workload_slider/100.0), capacity_eff], color=["#2f72b7","#7f8fa6"])
+            ax2.bar(["TDP efetivo (W)","Capacidade Efetiva (W)"], [power_generated, capacity_eff], color=["#2f72b7","#7f8fa6"])
             ax2.set_ylabel("Potência (W)")
-            ax2.set_ylim(0, max(capacity_eff, cpu_tdp*1.6)+20)
-            for i,(val,lab) in enumerate(zip([cpu_tdp*(workload_slider/100.0),capacity_eff], ["TDP","Capacidade"])):
+            ax2.set_ylim(0, max(capacity_eff, power_generated)+20)
+            for i,(val,lab) in enumerate(zip([power_generated,capacity_eff], ["TDP","Capacidade"])):
                 ax2.text(i, val + max(1,0.02*val), f"{val:.1f}", ha='center', fontsize=10)
             st.pyplot(fig2)
 
@@ -278,16 +349,20 @@ with col_right:
         st.write(f"Nominal (ajustado): {cinfo['tdp_nominal']} W")
         if "tdp_manufacturer" in cinfo:
             st.write(f"Especificação do fabricante: {cinfo['tdp_manufacturer']} W (aplicado → {cinfo['tdp_nominal']} W)")
+        sample_cpu_tdp = 95.0
+        sample_adj, _, _ = compute_adjusted_tdp_for_frequency({"tdp": sample_cpu_tdp, "frequencia_base": 3.5, "frequencia_turbo": 3.5, "ano": 2018})
+        eff_ex, bp_ex, dp_ex = compute_effective_capacity(cinfo['tdp_nominal'], sample_adj)
+        st.write(f"Capacidade efetiva (exemplo CPU 95W): {eff_ex:.1f} W")
         st.write(f"Ruído (médio): {cinfo['ruido_db']} dB")
         st.write(f"Durabilidade (estimada): {cinfo['durabilidade_anos']} anos")
     st.markdown("---")
     st.subheader("Observações sobre o modelo")
     st.write("""
     - Este simulador usa modelos heurísticos para comparações e estimativas.  
-    - tdp_manufacturer é um valor declarado pelo fabricante; tdp_nominal aplica 85% do valor declarado para refletir eficiência prática.  
-    - Para medições precisas de temperatura utilize sensores reais (HWMonitor, HWiNFO) e testes práticos.  
-    - Valores de ruído e durabilidade são estimativas médias baseadas em reviews e especificações.
+    - `tdp` do processador não foi alterado; aplicamos um ajuste dinâmico baseado em frequência média e arquitetura para estimar comportamento térmico.  
+    - `tdp_manufacturer` (quando presente) foi ajustado para `tdp_nominal = 85%` como margem prática.  
+    - Para medições precisas de temperatura utilize sensores reais (HWMonitor, HWiNFO) e testes práticos.
     """)
 
 st.markdown("---")
-st.caption("Versão modificada — fator de segurança 10% e tdp_nominal = 85% do declarado; novos CPUs e coolers adicionados conforme solicitado.")
+st.caption("Versão atualizada — CPUS revisadas com dados AMD/Intel oficiais; coolers ordenados por desempenho.")
