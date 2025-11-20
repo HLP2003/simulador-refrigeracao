@@ -235,6 +235,28 @@ amb = st.sidebar.number_input("Temperatura ambiente (°C)", 10.0,45.0,25.0,0.5)
 carga = st.sidebar.slider("Carga (percentual do TDP)", 10,150,100,1)
 perfil = st.sidebar.selectbox("Perfil de carga", list(WORKLOAD_PROFILES.keys()), index=3)
 freq_scale = st.sidebar.slider("Escala de frequência (%)", 80,140,100,1)/100.0
+
+# ----------------------------------------
+# EXIBIÇÃO SIMPLIFICADA DAS FREQUÊNCIAS (abaixo do slider)
+# ----------------------------------------
+st.sidebar.markdown("### Frequências do Processador")
+st.sidebar.markdown(
+    "Essas são as frequências principais do seu processador. "
+    "A frequência aplicada é o valor que você escolheu no controle acima."
+)
+
+# seguro caso cpu seja None
+base_freq_sidebar = cpu.get("frequencia_base", 0.0) if cpu else 0.0
+turbo_freq_sidebar = cpu.get("frequencia_turbo", base_freq_sidebar) if cpu else 0.0
+
+freq_aplicada_sidebar = base_freq_sidebar * freq_scale
+if turbo_freq_sidebar and freq_aplicada_sidebar > turbo_freq_sidebar:
+    freq_aplicada_sidebar = turbo_freq_sidebar
+
+st.sidebar.write(f"**Frequência base:** {base_freq_sidebar:.2f} GHz")
+st.sidebar.write(f"**Frequência turbo máxima:** {turbo_freq_sidebar:.2f} GHz")
+st.sidebar.write(f"**Frequência aplicada:** {freq_aplicada_sidebar:.2f} GHz")
+
 permitir_pl2 = st.sidebar.checkbox("Permitir burst PL2 (se aplicável)", value=True)
 mostrar_graf = st.sidebar.checkbox("Mostrar gráfico detalhado", value=True)
 
