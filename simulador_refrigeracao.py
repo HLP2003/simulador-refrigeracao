@@ -11,7 +11,7 @@ st.title("Simulador de Refrigeração de CPU (PT-BR)")
 st.markdown("Selecione **arquitetura → CPU**, cooler e condição do gabinete. Explicações em português abaixo.")
 
 # ---------------------------
-# DADOS (CPUs e COOLERS: sua lista completa)
+# DADOS (CPUS e COOLERS: sua lista completa)
 # ---------------------------
 CPUS = [
     {"modelo":"AMD Ryzen 5 1600X","tdp":95,"ano":2017,"socket":"AM4","frequencia_base":3.6,"frequencia_turbo":4.0,"arquitetura":"Zen","fabricante":"AMD"},
@@ -65,6 +65,8 @@ CPUS = [
     {"modelo":"Intel Xeon E5-2690 v3","tdp":135,"ano":2014,"socket":"LGA2011-v3","frequencia_base":2.6,"frequencia_turbo":3.5,"arquitetura":"Haswell-EP","fabricante":"Intel"},
     {"modelo":"Intel Xeon E5-2670 v3","tdp":120,"ano":2014,"socket":"LGA2011-v3","frequencia_base":2.3,"frequencia_turbo":3.1,"arquitetura":"Haswell-EP","fabricante":"Intel"},
     {"modelo":"Intel Xeon E5-2699 v4","tdp":145,"ano":2016,"socket":"LGA2011-v3","frequencia_base":2.2,"frequencia_turbo":3.6,"arquitetura":"Broadwell-EP","fabricante":"Intel"},
+    # Novo: Intel Xeon E5-1630 (adicionado conforme pedido)
+    {"modelo":"Intel Xeon E5-1630 v3","tdp":140,"ano":2014,"socket":"LGA2011-v3","frequencia_base":3.7,"frequencia_turbo":3.7,"arquitetura":"Haswell-EP","fabricante":"Intel"},
     {"modelo":"AMD FX-8350","tdp":125,"ano":2012,"socket":"AM3+","frequencia_base":4.0,"frequencia_turbo":4.2,"arquitetura":"Piledriver","fabricante":"AMD"},
 ]
 
@@ -97,6 +99,29 @@ COOLERS = [
     {"modelo":"Rise Mode Gamer Black 240 (AIO)","tipo":"AIO","tdp_manufacturer":220,"ruido_db":28,"durabilidade_anos":6},
     {"modelo":"Pichau AIO 240 (Water)","tipo":"AIO","tdp_manufacturer":270,"ruido_db":34,"durabilidade_anos":5},
     {"modelo":"Husky Hunter 240 (AIO)","tipo":"AIO","tdp_manufacturer":260,"ruido_db":33,"durabilidade_anos":5},
+
+    # -----------------------------
+    # NOVOS AIR COOLERS (adicionados conforme pedido) — não alterei os existentes
+    # Valores tdp_manufacturer estimados para posicionamento relativo
+    {"modelo":"NX400 Montech (Air)","tipo":"Air","tdp_manufacturer":90,"ruido_db":30,"durabilidade_anos":3},
+    {"modelo":"Gamdias Boreas (Air)","tipo":"Air","tdp_manufacturer":95,"ruido_db":31,"durabilidade_anos":4},
+    {"modelo":"Boreas E2 410 (Air)","tipo":"Air","tdp_manufacturer":100,"ruido_db":31,"durabilidade_anos":4},
+    {"modelo":"Rise Mode Z2 Pro (Air)","tipo":"Air","tdp_manufacturer":110,"ruido_db":29,"durabilidade_anos":4},
+    {"modelo":"Gamemax Sigma 520 Digital N2 (Air)","tipo":"Air","tdp_manufacturer":130,"ruido_db":32,"durabilidade_anos":4},
+    {"modelo":"Rise Mode Winter Black (Air)","tipo":"Air","tdp_manufacturer":140,"ruido_db":30,"durabilidade_anos":5},
+    {"modelo":"Cooler Master Hyper 212 Spectrum V3 (Air)","tipo":"Air","tdp_manufacturer":150,"ruido_db":34,"durabilidade_anos":5},
+    {"modelo":"PCYES Frost Pulse Black (Air)","tipo":"Air","tdp_manufacturer":160,"ruido_db":33,"durabilidade_anos":5},
+    {"modelo":"Pichau Falcon (Air)","tipo":"Air","tdp_manufacturer":170,"ruido_db":34,"durabilidade_anos":5},
+    {"modelo":"Air Cooler Boreas E2-410 (Air)","tipo":"Air","tdp_manufacturer":100,"ruido_db":31,"durabilidade_anos":4},
+
+    # NOVOS WATER COOLERS (AIO) — adicionados conforme pedido
+    {"modelo":"Water Cooler Gamer Rise Mode Black ARGB 120mm (AIO)","tipo":"AIO","tdp_manufacturer":180,"ruido_db":32,"durabilidade_anos":4},
+    {"modelo":"Water Cooler Tgt Spartel V3 Rainbow 120mm (AIO)","tipo":"AIO","tdp_manufacturer":170,"ruido_db":33,"durabilidade_anos":4},
+    {"modelo":"Water Cooler Pichau Aqua 240S (AIO)","tipo":"AIO","tdp_manufacturer":260,"ruido_db":34,"durabilidade_anos":5},
+    {"modelo":"Water Cooler Gamer Ninja Yuki ARGB 120mm (AIO)","tipo":"AIO","tdp_manufacturer":175,"ruido_db":31,"durabilidade_anos":4},
+    {"modelo":"Water Cooler Husky Icy Comet (AIO)","tipo":"AIO","tdp_manufacturer":200,"ruido_db":33,"durabilidade_anos":5},
+    {"modelo":"Water Cooler Husky Glacier (AIO)","tipo":"AIO","tdp_manufacturer":230,"ruido_db":33,"durabilidade_anos":5},
+    {"modelo":"Water Cooler PCYES Nix 2 120mm (AIO)","tipo":"AIO","tdp_manufacturer":165,"ruido_db":32,"durabilidade_anos":4},
 ]
 # ajuste prático do nominal do cooler (eficiência prática)
 for c in COOLERS: c["tdp_nominal"] = round(0.85 * c.get("tdp_manufacturer", 0.0),1)
@@ -180,8 +205,26 @@ cpu_choice = st.sidebar.selectbox("CPU (filtrada por arquitetura)", cpu_modelos)
 # map back
 cpu = next((filtered[i] for i,v in enumerate(cpu_modelos) if v==cpu_choice), filtered[0] if filtered else None)
 
-cooler_choice = st.sidebar.selectbox("Cooler", [c["modelo"] for c in COOLERS])
-cooler = next(c for c in COOLERS if c["modelo"]==cooler_choice)
+# filtro de tipo de cooler - permite mostrar listas separadas/ordenadas
+cooler_type = st.sidebar.selectbox("Tipo de cooler", ("Todos","Air","AIO"))
+
+# ordenar coolers por capacidade prática (tdp_nominal) — crescente: do pior ao melhor
+# primeiro garantimos que tdp_nominal exista (foi calculado acima)
+coolers_sorted = sorted(COOLERS, key=lambda x: x.get("tdp_nominal", 0.0))
+# filtrar por tipo se necessário
+if cooler_type == "Air":
+    coolers_display = [c for c in coolers_sorted if c.get("tipo","Air").upper()=="AIR"]
+elif cooler_type == "AIO":
+    coolers_display = [c for c in coolers_sorted if c.get("tipo","AIO").upper()=="AIO"]
+else:
+    coolers_display = coolers_sorted
+
+cooler_choice_label = [f'{c["modelo"]} — {c.get("tipo","Air")}' for c in coolers_display]
+if not cooler_choice_label:
+    cooler_choice_label = [f'{c["modelo"]} — {c.get("tipo","Air")}' for c in coolers_sorted]
+cooler_choice = st.sidebar.selectbox("Cooler (ordenado do pior ao melhor)", cooler_choice_label)
+# map back
+cooler = next((c for c in coolers_display if f'{c["modelo"]} — {c.get("tipo","Air")}'==cooler_choice), coolers_sorted[0])
 
 # antes de simular: condição do gabinete (disponível)
 vent = st.sidebar.selectbox("Condição do gabinete", ("Bem ventilado","Moderado","Pouco ventilado"))
@@ -214,7 +257,26 @@ if st.button("Simular"):
     else:
         tdp_ref = cpu["tdp"]
         perfil_f = WORKLOAD_PROFILES.get(perfil,1.0)
-        potencia_modelo = cpu_power_model(tdp_ref, carga, perfil_f, freq_scale)
+
+        # -----------------------
+        # FREQUÊNCIAS: base, turbo e frequência USADA no cálculo (considerando slider)
+        # - freq_used_nominal = base * freq_scale
+        # - se freq_used_nominal > turbo -> cap em turbo e ajusta freq_scale_for_calc
+        # -----------------------
+        base_freq = cpu.get("frequencia_base", 0.0)
+        turbo_freq = cpu.get("frequencia_turbo", base_freq)
+        freq_used_nominal = base_freq * freq_scale
+        if turbo_freq and freq_used_nominal > turbo_freq:
+            freq_used = turbo_freq
+            freq_scale_for_calc = turbo_freq / base_freq if base_freq>0 else freq_scale
+            freq_capped = True
+        else:
+            freq_used = freq_used_nominal
+            freq_scale_for_calc = freq_scale
+            freq_capped = False
+
+        # potência/modelo usa o fator de frequência efetivo
+        potencia_modelo = cpu_power_model(tdp_ref, carga, perfil_f, freq_scale_for_calc)
         PL1, PL2, TAU = compute_PLs(cpu)
         potencia_aplicada = min(potencia_modelo, PL2 if permitir_pl2 else PL1)
         nominal = cooler.get("tdp_nominal", round(0.85*cooler.get("tdp_manufacturer",0.0),1))
@@ -234,10 +296,14 @@ if st.button("Simular"):
         # saída
         st.markdown("## Resultado")
         st.write(f"**CPU:** {cpu['modelo']} — TDP referência: {tdp_ref} W — arquitetura: {cpu.get('arquitetura')}")
-        st.write(f"**Perfil:** {perfil} (fator {perfil_f:.2f}) • Escala freq: {freq_scale:.2f}×")
+        # exibir frequências: base, turbo e usada no cálculo
+        st.write(f"**Frequência base:** {base_freq:.2f} GHz • **Frequência turbo:** {turbo_freq:.2f} GHz")
+        cap_note = " (capada ao turbo)" if freq_capped else ""
+        st.write(f"**Frequência usada no cálculo:** {freq_used:.2f} GHz{cap_note} — escala efetiva utilizada: {freq_scale_for_calc:.2f}×")
+        st.write(f"**Perfil:** {perfil} (fator {perfil_f:.2f}) • Escala freq (slider): {freq_scale:.2f}×")
         st.write(f"**Potência estimada (modelo):** {potencia_modelo:.1f} W")
         st.write(f"**Potência aplicada (após PL):** {potencia_aplicada:.1f} W  (PL1={PL1} W, PL2={PL2} W)")
-        st.write(f"**Cooler:** {cooler['modelo']} — nominal ajustado: {nominal:.1f} W • ventilação: {vent}")
+        st.write(f"**Cooler:** {cooler['modelo']} — tipo: {cooler.get('tipo','Air')} — nominal ajustado: {nominal:.1f} W • ventilação: {vent}")
         st.write(f"**Capacidade efetiva do cooler:** {cap_eff:.1f} W (redução dinâmica {dyn_pct*100:.1f}%)")
         st.write(f"**Utilização da capacidade efetiva:** {util_pct}%")
         st.write(f"**RPM estimado:** {rpm} RPM")
@@ -270,6 +336,7 @@ if st.button("Simular"):
         # tabela resumida
         df=pd.DataFrame([{
             "cpu":cpu['modelo'],"arquitetura":cpu.get("arquitetura"),"tdp_ref_W":tdp_ref,
+            "freq_base_GHz":base_freq,"freq_turbo_GHz":turbo_freq,"freq_usada_GHz":round(freq_used,2),
             "pot_modelo_W":round(potencia_modelo,1),"pot_aplicada_W":round(potencia_aplicada,1),
             "cap_eff_W":round(cap_eff,1),"temp_steady_C":round(temp_steady,1),"util_pct":util_pct
         }])
