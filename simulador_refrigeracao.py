@@ -3,17 +3,19 @@
 # Uso: pip install streamlit matplotlib numpy pandas
 # streamlit run simulador_refrigeracao_unico_ptbr.py
 
-import streamlit as st, numpy as np, pandas as pd, matplotlib.pyplot as plt
+import streamlit as st
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
 from math import sqrt
 
 st.set_page_config(page_title="Simulador de Refrigeração — PT-BR", layout="wide")
 st.title("Simulador de Refrigeração de CPU (PT-BR)")
-st.markdown("Selecione **arquitetura → CPU**, cooler e condição do gabinete. Explicações em português abaixo.")
+st.markdown("Selecione **arquitetura → CPU**, cooler, condição do gabinete e a frequência desejada (para overclock). Explicações em português abaixo.")
 
-# =====================================================================
-# ====================== DADOS (CPUS E COOLERS) =======================
-# =====================================================================
-
+# ---------------------------
+# DADOS (CPUS e COOLERS: sua lista completa)
+# ---------------------------
 CPUS = [
     {"modelo":"AMD Ryzen 5 1600X","tdp":95,"ano":2017,"socket":"AM4","frequencia_base":3.6,"frequencia_turbo":4.0,"arquitetura":"Zen","fabricante":"AMD"},
     {"modelo":"AMD Ryzen 5 3600","tdp":65,"ano":2019,"socket":"AM4","frequencia_base":3.6,"frequencia_turbo":4.2,"arquitetura":"Zen 2","fabricante":"AMD"},
@@ -38,7 +40,6 @@ CPUS = [
     {"modelo":"AMD Ryzen 9 5950X","tdp":105,"ano":2020,"socket":"AM4","frequencia_base":3.4,"frequencia_turbo":4.9,"arquitetura":"Zen 3","fabricante":"AMD"},
     {"modelo":"AMD Ryzen 9 7950X","tdp":170,"ano":2022,"socket":"AM5","frequencia_base":4.5,"frequencia_turbo":5.7,"arquitetura":"Zen 4","fabricante":"AMD"},
     {"modelo":"AMD Ryzen 9 7950X3D","tdp":120,"ano":2023,"socket":"AM5","frequencia_base":4.2,"frequencia_turbo":5.7,"arquitetura":"Zen 4 (3D)","fabricante":"AMD"},
-
     {"modelo":"Intel Core 2 Duo E8400","tdp":65,"ano":2008,"socket":"LGA775","frequencia_base":3.0,"frequencia_turbo":3.0,"arquitetura":"Core (65nm)","fabricante":"Intel"},
     {"modelo":"Intel Core i3-530","tdp":73,"ano":2010,"socket":"LGA1156","frequencia_base":2.93,"frequencia_turbo":3.06,"arquitetura":"Clarksfield","fabricante":"Intel"},
     {"modelo":"Intel Core i3-3240","tdp":55,"ano":2012,"socket":"LGA1155","frequencia_base":3.4,"frequencia_turbo":3.4,"arquitetura":"Ivy Bridge","fabricante":"Intel"},
@@ -67,7 +68,7 @@ CPUS = [
     {"modelo":"Intel Xeon E5-2690 v3","tdp":135,"ano":2014,"socket":"LGA2011-v3","frequencia_base":2.6,"frequencia_turbo":3.5,"arquitetura":"Haswell-EP","fabricante":"Intel"},
     {"modelo":"Intel Xeon E5-2670 v3","tdp":120,"ano":2014,"socket":"LGA2011-v3","frequencia_base":2.3,"frequencia_turbo":3.1,"arquitetura":"Haswell-EP","fabricante":"Intel"},
     {"modelo":"Intel Xeon E5-2699 v4","tdp":145,"ano":2016,"socket":"LGA2011-v3","frequencia_base":2.2,"frequencia_turbo":3.6,"arquitetura":"Broadwell-EP","fabricante":"Intel"},
-
+    # Novo: Intel Xeon E5-1630 (adicionado conforme pedido)
     {"modelo":"Intel Xeon E5-1630 v3","tdp":140,"ano":2014,"socket":"LGA2011-v3","frequencia_base":3.7,"frequencia_turbo":3.7,"arquitetura":"Haswell-EP","fabricante":"Intel"},
     {"modelo":"AMD FX-8350","tdp":125,"ano":2012,"socket":"AM3+","frequencia_base":4.0,"frequencia_turbo":4.2,"arquitetura":"Piledriver","fabricante":"AMD"},
 ]
@@ -89,7 +90,6 @@ COOLERS = [
     {"modelo":"Be Quiet! Dark Rock Pro 4 (Air)","tipo":"Air","tdp_manufacturer":250,"ruido_db":24,"durabilidade_anos":7},
     {"modelo":"Noctua NH-D15 (Air)","tipo":"Air","tdp_manufacturer":250,"ruido_db":24,"durabilidade_anos":8},
     {"modelo":"DeepCool AK620 (Air)","tipo":"Air","tdp_manufacturer":260,"ruido_db":28,"durabilidade_anos":6},
-
     {"modelo":"Rise Mode Black 240 (Water)","tipo":"AIO","tdp_manufacturer":250,"ruido_db":30,"durabilidade_anos":5},
     {"modelo":"GameMax IceBurg 240 (Water)","tipo":"AIO","tdp_manufacturer":245,"ruido_db":31,"durabilidade_anos":6},
     {"modelo":"Corsair H100i (AIO 240) (Water)","tipo":"AIO","tdp_manufacturer":300,"ruido_db":28,"durabilidade_anos":6},
@@ -103,7 +103,7 @@ COOLERS = [
     {"modelo":"Pichau AIO 240 (Water)","tipo":"AIO","tdp_manufacturer":270,"ruido_db":34,"durabilidade_anos":5},
     {"modelo":"Husky Hunter 240 (AIO)","tipo":"AIO","tdp_manufacturer":260,"ruido_db":33,"durabilidade_anos":5},
 
-    # novos air coolers
+    # NOVOS AIR COOLERS (adicionados conforme pedido)
     {"modelo":"NX400 Montech (Air)","tipo":"Air","tdp_manufacturer":90,"ruido_db":30,"durabilidade_anos":3},
     {"modelo":"Gamdias Boreas (Air)","tipo":"Air","tdp_manufacturer":95,"ruido_db":31,"durabilidade_anos":4},
     {"modelo":"Boreas E2 410 (Air)","tipo":"Air","tdp_manufacturer":100,"ruido_db":31,"durabilidade_anos":4},
@@ -115,7 +115,7 @@ COOLERS = [
     {"modelo":"Pichau Falcon (Air)","tipo":"Air","tdp_manufacturer":170,"ruido_db":34,"durabilidade_anos":5},
     {"modelo":"Air Cooler Boreas E2-410 (Air)","tipo":"Air","tdp_manufacturer":100,"ruido_db":31,"durabilidade_anos":4},
 
-    # novos water coolers
+    # NOVOS WATER COOLERS (AIO)
     {"modelo":"Water Cooler Gamer Rise Mode Black ARGB 120mm (AIO)","tipo":"AIO","tdp_manufacturer":180,"ruido_db":32,"durabilidade_anos":4},
     {"modelo":"Water Cooler Tgt Spartel V3 Rainbow 120mm (AIO)","tipo":"AIO","tdp_manufacturer":170,"ruido_db":33,"durabilidade_anos":4},
     {"modelo":"Water Cooler Pichau Aqua 240S (AIO)","tipo":"AIO","tdp_manufacturer":260,"ruido_db":34,"durabilidade_anos":5},
@@ -125,14 +125,13 @@ COOLERS = [
     {"modelo":"Water Cooler PCYES Nix 2 120mm (AIO)","tipo":"AIO","tdp_manufacturer":165,"ruido_db":32,"durabilidade_anos":4},
 ]
 
-# Ajuste do TDP nominal
+# ajuste prático do nominal do cooler (eficiência prática)
 for c in COOLERS:
     c["tdp_nominal"] = round(0.85 * c.get("tdp_manufacturer", 0.0), 1)
 
-# =====================================================================
-# ========================== FUNÇÕES DO MODELO =========================
-# =====================================================================
-
+# ---------------------------
+# PERFIS e PARÂMETROS
+# ---------------------------
 BASE_SAFETY_PCT = 0.10
 WORKLOAD_PROFILES = {
     "Idle / Leve": 0.15,
@@ -142,131 +141,277 @@ WORKLOAD_PROFILES = {
     "AVX/Prime (pesado)": 1.30
 }
 
+# ---------------------------
+# FUNÇÕES (explicadas)
+# ---------------------------
 def avg_freq(cpu):
     return (cpu.get("frequencia_base", 3.5) + cpu.get("frequencia_turbo", 3.5)) / 2.0
 
 def cpu_power_model(tdp, carga_pct, profile, freq_scale=1.0):
+    """
+    Modelo heurístico de potência:
+    - idle: fração do TDP
+    - dyn: parte dinâmica proporcional a carga, perfil e escala de frequência.
+      aqui aplicamos um expoente (>1) para refletir que overclock (freq+voltagem)
+      aumenta consumo mais que linearmente.
+    - leak: leakage aumenta com frequência/voltagem (simplesmente modelado).
+    """
     idle = 0.10 * tdp
-    dyn = tdp * (carga_pct/100.0) * (0.80 * profile) * freq_scale
-    leak = 0.02 * tdp * (1 + 0.05*(freq_scale - 1.0))
+    dyn = tdp * (carga_pct / 100.0) * (0.80 * profile) * (freq_scale ** 1.20)
+    leak = 0.02 * tdp * (1 + 0.15 * (freq_scale - 1.0))
     return max(0.0, idle + dyn + leak)
 
 def compute_PLs(cpu):
-    t = cpu["tdp"]
-    y = cpu["ano"]
-    if y >= 2022:  return round(t*1.2,1), round(t*1.8,1), 28.0
-    if y >= 2017:  return round(t*1.05,1), round(t*1.4,1), 20.0
-    return round(t*1.0,1), round(t*1.2,1), 10.0
+    t = cpu.get("tdp", 65)
+    y = cpu.get("ano", 2018)
+    if y >= 2022:
+        return round(t * 1.2, 1), round(t * 1.8, 1), 28.0
+    if y >= 2017:
+        return round(t * 1.05, 1), round(t * 1.4, 1), 20.0
+    return round(t * 1.0, 1), round(t * 1.2, 1), 10.0
 
 def derive_rth_heatsink(c):
-    nome = c["modelo"].lower()
-    tipo = c["tipo"].lower()
-
+    nome = c.get("modelo", "").lower()
+    tipo = c.get("tipo", "air").lower()
     if tipo == "aio":
         if "360" in nome: return 0.07
         if "280" in nome: return 0.09
         if "240" in nome or "h100" in nome: return 0.11
         return 0.10
-
     premium = ["noctua", "dark rock", "true spirit", "ak620"]
-
     if "hyper 212" in nome: return 0.16
-    if any(p in nome for p in premium): return 0.12
-    if any(k in nome for k in ["gammaxx","superframe","gamedias","glacier","tyr"]): return 0.18
-
+    if any(k in nome for k in premium): return 0.12
+    if any(k in nome for k in ["gammaxx", "superframe", "gamedias", "glacier", "tyr"]): return 0.18
     return 0.18
 
 def cpu_r_cs(cpu):
-    # resistência CPU → IHS → cooler
-    if cpu["fabricante"] == "AMD":
-        if "3d" in cpu["arquitetura"].lower():
-            return 0.25
-        return 0.22
-    return 0.20
+    fab = cpu.get("fabricante", "Intel").lower()
+    ano = cpu.get("ano", 2018)
+    if fab == "amd": return 0.25
+    if ano >= 2022: return 0.20
+    if ano >= 2015: return 0.22
+    return 0.30
 
-def temp_cpu(power, r_total, amb):
-    return amb + power * r_total
+def fan_rpm(util):
+    idle, maxr = 600, 2200
+    u = max(0.0, min(100.0, util))
+    return idle if u <= 15 else int(idle + (maxr - idle) * ((u - 15) / 85.0))
 
-# =====================================================================
-# ======================== INTERFACE STREAMLIT =========================
-# =====================================================================
+def r_total(cpu, cooler, rpm):
+    Rcs = cpu_r_cs(cpu)
+    Rhs = derive_rth_heatsink(cooler)
+    rpm_ref = 1500.0
+    if rpm <= 0: rpm = rpm_ref
+    Rhs_adj = Rhs * (rpm_ref / rpm) ** 0.8
+    return Rcs + Rhs_adj
 
-st.sidebar.header("Seleção")
+def estimate_noise(cooler, util):
+    base = cooler.get("ruido_db", 30)
+    return round(base * (0.6 + 0.4 * sqrt(min(1.0, util / 100.0))), 1)
 
-arquiteturas = sorted(list(set([c["arquitetura"] for c in CPUS])))
-arq_sel = st.sidebar.selectbox("Arquitetura", arquiteturas)
+def estimate_durability(cooler, util):
+    b = cooler.get("durabilidade_anos", 5)
+    if util <= 80: return b
+    exc = (util - 80) / 20.0
+    return max(1, int(b * (1.0 - 0.5 * exc)))
 
-cpu_list = [c for c in CPUS if c["arquitetura"] == arq_sel]
-cpu_sel_name = st.sidebar.selectbox("CPU", [c["modelo"] for c in cpu_list])
-cpu_sel = next(c for c in cpu_list if c["modelo"] == cpu_sel_name)
+# ---------------------------
+# UI: seleção por ARQUITETURA então CPU
+# ---------------------------
+arqus = sorted({c["arquitetura"] for c in CPUS})
+st.sidebar.markdown("### Seleção rápida")
+arch = st.sidebar.selectbox("Arquitetura", ["(todas)"] + arqus, index=0)
+filtered = CPUS if arch == "(todas)" else [c for c in CPUS if c["arquitetura"] == arch]
+cpu_modelos = [f'{c["modelo"]} — {c["ano"]}' for c in filtered]
+cpu_choice = st.sidebar.selectbox("CPU (filtrada por arquitetura)", cpu_modelos)
+# map back
+cpu = next((filtered[i] for i, v in enumerate(cpu_modelos) if v == cpu_choice), filtered[0] if filtered else None)
 
-cooler_sel_name = st.sidebar.selectbox("Cooler", [c["modelo"] for c in COOLERS])
-cooler_sel = next(c for c in COOLERS if c["modelo"] == cooler_sel_name)
+# filtro de tipo de cooler
+cooler_type = st.sidebar.selectbox("Tipo de cooler", ("Todos", "Air", "AIO"))
 
-temp_amb = st.sidebar.slider("Temperatura ambiente (°C)", 10, 40, 25)
-profile_sel_name = st.sidebar.selectbox("Uso / Carga", list(WORKLOAD_PROFILES.keys()))
-profile_sel = WORKLOAD_PROFILES[profile_sel_name]
+# ordenar coolers por capacidade prática (tdp_nominal)
+coolers_sorted = sorted(COOLERS, key=lambda x: x.get("tdp_nominal", 0.0))
+if cooler_type == "Air":
+    coolers_display = [c for c in coolers_sorted if c.get("tipo", "Air").upper() == "AIR"]
+elif cooler_type == "AIO":
+    coolers_display = [c for c in coolers_sorted if c.get("tipo", "AIO").upper() == "AIO"]
+else:
+    coolers_display = coolers_sorted
 
-PL1, PL2, tau = compute_PLs(cpu_sel)
-st.sidebar.markdown(f"**PL1:** {PL1} W — **PL2:** {PL2} W")
+cooler_choice_label = [f'{c["modelo"]} — {c.get("tipo","Air")}' for c in coolers_display]
+if not cooler_choice_label:
+    cooler_choice_label = [f'{c["modelo"]} — {c.get("tipo","Air")}' for c in coolers_sorted]
+cooler_choice = st.sidebar.selectbox("Cooler (ordenado do pior ao melhor)", cooler_choice_label)
+cooler = next((c for c in coolers_display if f'{c["modelo"]} — {c.get("tipo","Air")}' == cooler_choice), coolers_sorted[0])
 
-freq_scale = st.sidebar.slider("Overclock (multiplicador de frequência)", 1.0, 1.5, 1.0)
+# condição do gabinete
+vent = st.sidebar.selectbox("Condição do gabinete", ("Bem ventilado", "Moderado", "Pouco ventilado"))
+vent_factor = 1.0 if vent == "Bem ventilado" else (0.92 if vent == "Moderado" else 0.85)
 
-# =====================================================================
-# =========================== SIMULAÇÃO ================================
-# =====================================================================
+# parâmetros principais
+amb = st.sidebar.number_input("Temperatura ambiente (°C)", 10.0, 45.0, 25.0, 0.5)
+carga = st.sidebar.slider("Carga (percentual do TDP)", 10, 150, 100, 1)
+perfil = st.sidebar.selectbox("Perfil de carga", list(WORKLOAD_PROFILES.keys()), index=3)
 
-r_hs = derive_rth_heatsink(cooler_sel)
-r_cs_val = cpu_r_cs(cpu_sel)
-r_total = r_hs + r_cs_val
+# ---------------------------
+# CONTROLE DE FREQUÊNCIA MANUAL (OVERLOCK)
+# ---------------------------
+# Se cpu for None, usamos defaults seguros
+if cpu:
+    base_freq_default = cpu.get("frequencia_base", 0.0)
+    turbo_freq_default = cpu.get("frequencia_turbo", base_freq_default)
+else:
+    base_freq_default = 3.5
+    turbo_freq_default = 4.5
 
-power = cpu_power_model(cpu_sel["tdp"], 100, profile_sel, freq_scale)
-power = min(power, PL2)
+st.sidebar.markdown("### Frequência do processador (manual — Overclock permitido)")
+st.sidebar.markdown(
+    "Veja abaixo a frequência base e turbo registrada para o CPU selecionado. "
+    "Você pode definir uma frequência maior que o turbo (overclock)."
+)
+st.sidebar.write(f"**Frequência base (min)**: {base_freq_default:.2f} GHz")
+st.sidebar.write(f"**Frequência turbo (referência)**: {turbo_freq_default:.2f} GHz")
 
-temp_est = temp_cpu(power, r_total, temp_amb)
+# limites do controle: permitimos acima do turbo (até 60% acima) e um pouco abaixo da base.
+min_freq_allowed = round(max(0.5, base_freq_default * 0.8), 2)
+max_freq_allowed = round(max(turbo_freq_default * 1.6, base_freq_default * 1.2), 2)
 
-# =====================================================================
-# ============================ RESULTADOS ==============================
-# =====================================================================
+# controle: o usuário entra com a frequência desejada (GHz)
+freq_user = st.sidebar.number_input(
+    "Frequência alvo (GHz) — digite manualmente",
+    min_value=min_freq_allowed,
+    max_value=max_freq_allowed,
+    value=round(turbo_freq_default, 2),
+    step=0.01,
+    format="%.2f"
+)
+st.sidebar.caption(f"Permitido: {min_freq_allowed:.2f} — {max_freq_allowed:.2f} GHz (base: {base_freq_default:.2f} GHz, turbo: {turbo_freq_default:.2f} GHz)")
 
-st.subheader("Resultados da Simulação")
+permitir_pl2 = st.sidebar.checkbox("Permitir burst PL2 (se aplicável)", value=True)
+mostrar_graf = st.sidebar.checkbox("Mostrar gráfico detalhado", value=True)
 
-col1, col2, col3 = st.columns(3)
-col1.metric("Potência estimada (W)", f"{power:.1f} W")
-col2.metric("Resistência Térmica Total (°C/W)", f"{r_total:.3f}")
-col3.metric("Temperatura Estimada (°C)", f"{temp_est:.1f} °C")
+# legendas / explicações
+with st.expander("Legenda e como funciona (resumo)"):
+    st.markdown("""
+    - **R_cs (°C/W)** — resistência interna DIE/IHS → contato.
+    - **R_hs (°C/W)** — resistência do radiador/torre do cooler (estimada).
+    - **R_total = R_cs + R_hs'** → resistência total usada no cálculo (°C/W).
+    - **ΔT = P × R_total** → aumento de temperatura acima do ambiente.
+    - **Hotspot AMD**: aplicamos um offset interno simulando Tj > IHS.
+    - **PL1 / PL2**: limites heurísticos para burst/sustentação.
+    - **Observação:** o usuário NÃO precisa informar resistências — são estimadas automaticamente.
+    - **Overclock:** você definiu manualmente a frequência; o modelo aumenta consumo de forma supralinear (expoente 1.20) para simular efeito frequência+voltagem.
+    """)
 
-# gráfico
-st.subheader("Comportamento Térmico")
+# botão simular
+if st.button("Simular"):
+    if cpu is None or cooler is None:
+        st.error("Selecione CPU e cooler válidos.")
+    else:
+        tdp_ref = cpu["tdp"]
+        perfil_f = WORKLOAD_PROFILES.get(perfil, 1.0)
 
-temps = []
-powers = []
-steps = np.linspace(0.1, profile_sel, 30)
+        # base e turbo para exibir
+        base_freq = cpu.get("frequencia_base", 0.0)
+        turbo_freq = cpu.get("frequencia_turbo", base_freq)
 
-for p in steps:
-    pw = cpu_power_model(cpu_sel["tdp"], 100*p, p, freq_scale)
-    temps.append(temp_cpu(pw, r_total, temp_amb))
-    powers.append(pw)
+        # usamos a frequência definida pelo usuário (sem cap)
+        freq_used = float(freq_user)
+        # escala efetiva relativa à base (para o modelo)
+        freq_scale_for_calc = (freq_used / base_freq) if base_freq > 0 else 1.0
 
-plt.figure(figsize=(7,4))
-plt.plot(steps, temps, linewidth=2)
-plt.xlabel("Carga relativa")
-plt.ylabel("Temperatura (°C)")
-plt.grid(True)
+        # potência/modelo usa o fator de frequência efetivo (com expoente >1 para OC)
+        potencia_modelo = cpu_power_model(tdp_ref, carga, perfil_f, freq_scale_for_calc)
+        PL1, PL2, TAU = compute_PLs(cpu)
+        potencia_aplicada = min(potencia_modelo, PL2 if permitir_pl2 else PL1)
 
-st.pyplot(plt)
+        # capacidade do cooler ajustada por ventilação e margem de segurança
+        nominal = cooler.get("tdp_nominal", round(0.85 * cooler.get("tdp_manufacturer", 0.0), 1))
+        nominal_v = nominal * vent_factor * (1.0 - BASE_SAFETY_PCT)
 
-# =====================================================================
-# ============================== INFO =================================
-# =====================================================================
+        # dinâmica de redução: se power próxima do nominal, desempenho/prática cai
+        dyn_pct = min(0.20, 0.15 * (potencia_aplicada / max(1.0, nominal_v)))
+        cap_eff = nominal_v * (1.0 - dyn_pct)
+
+        util_pct = round((potencia_aplicada / max(1.0, cap_eff)) * 100.0, 1) if cap_eff > 0 else 999.9
+        rpm = fan_rpm(util_pct)
+        Rtot = r_total(cpu, cooler, rpm)
+
+        # temperatura steady (IHS aproximado)
+        temp_steady = amb + potencia_aplicada * Rtot
+
+        # hotspot AMD offset (simula Tj > IHS)
+        hotspot = cpu.get("fabricante", "Intel").lower() == "amd"
+        if hotspot:
+            temp_steady += 8.0
+
+        aviso_throttle = temp_steady >= 95.0
+        ruido = estimate_noise(cooler, util_pct)
+        dur = estimate_durability(cooler, util_pct)
+
+        # saída
+        st.markdown("## Resultado")
+        st.write(f"**CPU:** {cpu['modelo']} — TDP referência: {tdp_ref} W — arquitetura: {cpu.get('arquitetura')}")
+        st.write(f"**Frequência base:** {base_freq:.2f} GHz • **Frequência turbo (referência):** {turbo_freq:.2f} GHz")
+        oc_note = " (frequência definida manualmente — overclock possível)" if freq_used > turbo_freq else ""
+        st.write(f"**Frequência usada no cálculo:** {freq_used:.2f} GHz{oc_note} — escala efetiva: {freq_scale_for_calc:.2f}×")
+        st.write(f"**Perfil:** {perfil} (fator {perfil_f:.2f}) • Carga: {carga}%")
+        st.write(f"**Potência estimada (modelo):** {potencia_modelo:.1f} W")
+        st.write(f"**Potência aplicada (após PL):** {potencia_aplicada:.1f} W  (PL1={PL1} W, PL2={PL2} W)")
+        st.write(f"**Cooler:** {cooler['modelo']} — tipo: {cooler.get('tipo','Air')} — nominal ajustado: {nominal:.1f} W • ventilação: {vent}")
+        st.write(f"**Capacidade efetiva do cooler:** {cap_eff:.1f} W (redução dinâmica {dyn_pct*100:.1f}%)")
+        st.write(f"**Utilização da capacidade efetiva:** {util_pct}%")
+        st.write(f"**RPM estimado:** {rpm} RPM")
+        st.write(f"**Resistência térmica total (R_total):** {Rtot:.3f} °C/W (estimada)")
+        st.write(f"**Temperatura estimada (steady, IHS aprox.):** {temp_steady:.1f} °C (ambiente {amb} °C)")
+        if hotspot:
+            st.write("⚠️ Hotspot AMD aplicado internamente (simula Tj > IHS).")
+        if aviso_throttle:
+            st.error("Risco: Temperatura estimada >= 95°C — possível throttling.")
+        else:
+            st.success("Temperatura estimada dentro de limites operacionais.")
+        st.write(f"**Ruído estimado:** {ruido} dB • **Durabilidade estimada:** ~{dur} anos")
+
+        # gráficos
+        if mostrar_graf:
+            cols = st.columns(2)
+            with cols[0]:
+                st.markdown("### Temperatura vs Potência aplicada")
+                pvals = np.linspace(0.2 * tdp_ref, max(tdp_ref * 1.6, potencia_aplicada * 1.2), 40)
+                temps = amb + pvals * Rtot + (8.0 if hotspot else 0.0)
+                fig, ax = plt.subplots(figsize=(6, 3))
+                ax.plot(pvals, temps, linewidth=2)
+                ax.scatter([potencia_aplicada], [temp_steady], color='red', zorder=6)
+                ax.set_xlabel("Potência (W)")
+                ax.set_ylabel("Temperatura estimada (°C)")
+                ax.grid(alpha=0.4, ls='--')
+                st.pyplot(fig)
+            with cols[1]:
+                st.markdown("### Potência aplicada × Capacidade efetiva")
+                fig2, ax2 = plt.subplots(figsize=(5, 3))
+                ax2.bar(["Power(W)", "Cap.Efetiva(W)"], [potencia_aplicada, cap_eff])
+                for i, v in enumerate([potencia_aplicada, cap_eff]):
+                    ax2.text(i, v + max(1, 0.02 * v), f"{v:.1f}", ha='center')
+                ax2.set_ylim(0, max(cap_eff, potencia_aplicada) * 1.3 if max(cap_eff, potencia_aplicada) > 0 else 1)
+                st.pyplot(fig2)
+
+        # tabela resumida
+        df = pd.DataFrame([{
+            "cpu": cpu['modelo'],
+            "arquitetura": cpu.get("arquitetura"),
+            "tdp_ref_W": tdp_ref,
+            "freq_base_GHz": base_freq,
+            "freq_turbo_GHz": turbo_freq,
+            "freq_usada_GHz": round(freq_used, 2),
+            "pot_modelo_W": round(potencia_modelo, 1),
+            "pot_aplicada_W": round(potencia_aplicada, 1),
+            "cap_eff_W": round(cap_eff, 1),
+            "temp_steady_C": round(temp_steady, 1),
+            "util_pct": util_pct
+        }])
+        st.markdown("### Dados resumidos")
+        st.dataframe(df)
 
 st.markdown("---")
-st.subheader("Como interpretar o resultado")
-
-st.markdown("""
-- **Temperaturas abaixo de 75°C:** excelentes para jogos e uso geral.  
-- **75–85°C:** normal para Ryzen e Intel modernos em carga.  
-- **Acima de 90°C:** risco de thermal throttling.  
-- **Acima de 95°C:** limite crítico para CPUs modernas (Zen4/5 e Intel 12–14th).  
-""")
-
+st.caption("Observação: O simulador usa heurísticas (R_cs, R_hs estimadas automaticamente). Para medições reais, use sensores e benchs controlados (HWiNFO, etc.).")
